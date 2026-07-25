@@ -48,7 +48,9 @@
     "45-nahwu-jumla",
     "46-nahwu-amil",
     "47-balagha-tashbih",
-    "48-balagha-istiara"
+    "48-balagha-istiara",
+    "49-quran-words",
+    "50-quran-ayat"
   ],
   "sections": [
     {
@@ -106,6 +108,13 @@
       "s": "তাশবীহ · ইসতিআরা · কিনায়া",
       "from": 46,
       "to": 47
+    },
+    {
+      "part": "কুরআনী আরবি",
+      "t": "কুরআনের শব্দ ও আয়াত",
+      "s": "বেশি-ব্যবহৃত শব্দ · ছোট আয়াত",
+      "from": 48,
+      "to": 49
     }
   ]
 }
