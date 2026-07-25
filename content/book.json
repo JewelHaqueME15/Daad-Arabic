@@ -41,7 +41,14 @@
     "36-numbers",
     "37-comparison",
     "38-relative-conditional",
-    "39-quran-hadith"
+    "39-quran-hadith",
+    "42-sarf-weak-verbs",
+    "43-sarf-passive-nouns",
+    "44-nahwu-irab",
+    "45-nahwu-jumla",
+    "46-nahwu-amil",
+    "47-balagha-tashbih",
+    "48-balagha-istiara"
   ],
   "sections": [
     {
@@ -78,6 +85,27 @@
       "s": "দ্বিবচন · বহুবচন · সংখ্যা · তুলনা · কুরআন-হাদীস",
       "from": 34,
       "to": 40
+    },
+    {
+      "part": "ব্যাকরণ",
+      "t": "সরফ (রূপতত্ত্ব)",
+      "s": "সহীহ-মু'তাল · মাজহুল · ইসমের গঠন",
+      "from": 41,
+      "to": 42
+    },
+    {
+      "part": "ব্যাকরণ",
+      "t": "নাহু (বাক্যতত্ত্ব)",
+      "s": "ই'রাব · জুমলা · আমিল",
+      "from": 43,
+      "to": 45
+    },
+    {
+      "part": "ব্যাকরণ",
+      "t": "বালাগাহ (অলংকার)",
+      "s": "তাশবীহ · ইসতিআরা · কিনায়া",
+      "from": 46,
+      "to": 47
     }
   ]
 }

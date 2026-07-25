@@ -60,6 +60,7 @@ const RAW_UNITS = lessons.map(({ L }) => {
   const u = { id: L.id, icon: L.icon, title: L.title, sub: L.sub, tip: L.tip, vocab: L.vocab, sents: L.sents };
   if (L.qa) u.qa = L.qa;
   if (L.fill) u.fill = L.fill;
+  if (L.noTaper) u.noTaper = true; // ব্যাকরণ পাঠ — হারাকাত পূর্ণ থাকে (i'rab দেখাতে হবে)
   return u;
 });
 const BOOK_ORDER = ids;

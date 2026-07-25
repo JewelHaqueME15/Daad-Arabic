@@ -104,7 +104,7 @@ export function startLesson(ui) {
 }
 /* ════════ শব্দ-পরিচিতি স্ক্রীন (বইয়ের মতো) ════════ */
 export function openVocabIntro(ui) {
-  const u = UNITS[ui], lvl = tashkeelLevel(ui);
+  const u = UNITS[ui], lvl = levelFor(ui);
   ["home", "words", "league", "profile"].forEach((x) => $("#scr-" + x).classList.remove("active"));
   $("#scr-lesson").classList.remove("active"); $("#scr-result").classList.remove("active"); $("#scr-story").classList.remove("active"); $("#scr-visual").classList.remove("active");
   $("#topbar").style.display = "none"; $("#tabbar").style.display = "none";
@@ -147,6 +147,9 @@ export function showRule() {
 }
 export function setProgress() { $("#pbar>div").style.width = (L.i / L.ex.length * 100) + "%"; $("#lesson-hearts").textContent = "❤️" + S.hearts; }
 /* ── রেন্ডার ── */
+/* তাশকীল স্তর — ব্যাকরণ পাঠে (noTaper) সবসময় পূর্ণ হারাকাত, নইলে বইয়ের ঢাল */
+function levelFor(ui) { const u = UNITS[ui]; return (u && u.noTaper) ? 0 : tashkeelLevel(ui); }
+
 export function renderEx() {
   const e = L.ex[L.i]; setProgress();
   // নিয়ম-দেখার বোতাম শুধু সাধারণ পাঠে (রিভিউতে একক পাঠ নেই, তাই লুকানো)
@@ -158,7 +161,7 @@ export function renderEx() {
   const sk = $("#btn-skip"); if (sk) sk.classList.remove("hide"); // নতুন প্রশ্নে আবার দেখাও
   L.sel = null; L.matchDone = 0; L.matchSel = null; L.built = []; L.answered = false;
   // বইয়ের মতো ধাপে ধাপে হারাকাত কমে — শুধু দেখানোর সময়, মেলানো/উচ্চারণে নয়
-  const lvl = tashkeelLevel(L.ui); L.tkLvl = lvl;
+  const lvl = levelFor(L.ui); L.tkLvl = lvl;
   if (e.t === "mc_ab") {
     A.innerHTML = `<div class="ex-title">এই শব্দের অর্থ কী?</div>
     <div class="speak-row"><button class="speak-btn" onclick="speak('${e.w.a}')">🔊</button><span class="ar" style="font-size:40px">${tk(e.w.a,lvl)}</span></div>
