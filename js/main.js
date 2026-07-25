@@ -1,7 +1,7 @@
 import { $ } from "./utils.js";
 import { S, DEF, setSession, dailyRefresh, save, migrateOrder } from "./state.js";
 import * as api from "./api.js";
-import { showTab, tapUnit, buyHearts, storyLockedMsg, resetAll, modal, closeModal, updateTop, renderLeague } from "./ui.js";
+import { showTab, tapUnit, buyHearts, storyLockedMsg, resetAll, modal, closeModal, updateTop, renderLeague, showLessonIndex, filterLessons } from "./ui.js";
 import { startLesson, startReview, openVocabIntro, selOpt, tapMatch, tapTile, quitLesson, afterResult, showRule, skipEx } from "./lesson.js";
 import { openStory, finishStory } from "./stories.js";
 import { vcTapTile } from "./visual.js";
@@ -145,4 +145,5 @@ Object.assign(window, {
   vcTapTile, selOpt, tapMatch, tapTile, afterResult, startReview, startLesson, openStory, showRule,
   nextIntro, setGender, showGenderAsk,
   startFlash, flipCard, flashKnown, flashAgain, quitFlash, skipEx, renderLeague,
+  showLessonIndex, filterLessons,
 });

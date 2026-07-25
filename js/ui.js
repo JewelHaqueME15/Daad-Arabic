@@ -52,7 +52,7 @@ export function renderPath() {
   const p = $("#path");
   const gPct = Math.min(100, Math.round(S.dayXP / S.goal * 100));
   let h = `<div style="text-align:center;padding:4px 20px 0">
-   <div style="font-size:13px;color:var(--gray);font-weight:700">📕 এসো আরবি শিখি · সম্পূর্ণ কিতাব (৩ খণ্ড)</div>
+   <div style="font-size:13px;color:var(--gray);font-weight:700">📕 এসো আরবি শিখি · কিতাব ও ব্যাকরণ</div>
    <div style="font-size:16px;font-weight:800;margin-top:2px">ইলমের সফরে স্বাগতম, ${esc(CUR || "বন্ধু")}! 🌙</div>
    <div style="margin:12px 16px 0;border:2px solid var(--line);border-radius:14px;padding:10px 14px;text-align:right">
      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800">
@@ -63,9 +63,15 @@ export function renderPath() {
        <div style="height:100%;width:${gPct}%;background:${gPct >= 100 ? "var(--green)" : "var(--gold)"};border-radius:6px;transition:width .4s"></div>
      </div>
    </div></div>`;
+  // দ্রুত-চলাচল: পরের পাঠে চালিয়ে যাও + যেকোনো পাঠ খুঁজে জাম্প করো
+  const next = nextLessonIdx();
+  h += `<div style="padding:12px 16px 0;display:flex;gap:8px">
+    ${next >= 0 ? `<button class="btn" style="flex:1" onclick="tapUnit(${next})">▶ চালিয়ে যাও — পাঠ ${bn(next + 1)}</button>` : ""}
+    <button class="btn ghost" style="${next >= 0 ? "flex:0 0 54px;padding:14px 0" : "flex:1"}" onclick="showLessonIndex()">🔍${next >= 0 ? "" : " পাঠ খুঁজো"}</button>
+  </div>`;
   // শেখা শব্দ যথেষ্ট হলে হোম থেকেই দ্রুত অনুশীলন — খুঁজতে হবে না
   const learnedCount = Object.keys(S.words).length;
-  if (learnedCount >= 4) h += `<div style="padding:12px 16px 0"><button class="btn blue" onclick="startReview()">🔁 শেখা শব্দ অনুশীলন করো (${learnedCount}টি)</button></div>`;
+  if (learnedCount >= 4) h += `<div style="padding:8px 16px 0"><button class="btn blue" onclick="startReview()">🔁 শেখা শব্দ অনুশীলন করো (${learnedCount}টি)</button></div>`;
   let lastPart = null;
   SECTIONS.forEach((sec, si) => {
     const done = UNITS.slice(sec.from, sec.to + 1).filter((u) => (S.crowns[u.id] || 0) > 0).length;
@@ -101,8 +107,43 @@ export function renderPath() {
       }
     });
   });
-  h += `<div style="text-align:center;padding:10px;color:var(--gray);font-weight:700;font-size:13px">১ম খণ্ডের ৩ অধ্যায় + ২য়-৩য় খণ্ডের নির্যাস — সম্পূর্ণ কিতাব, আলহামদুলিল্লাহ 🤲</div>`;
+  h += `<div style="text-align:center;padding:10px;color:var(--gray);font-weight:700;font-size:13px">সম্পূর্ণ কিতাব (৩ খণ্ড) + সরফ · নাহু · বালাগাহ — আলহামদুলিল্লাহ 🤲</div>`;
   p.innerHTML = h;
+}
+/* পরবর্তী করণীয় পাঠ — যেটি খোলা কিন্তু এখনো সম্পূর্ণ হয়নি */
+export function nextLessonIdx() {
+  for (let i = 0; i < UNITS.length; i++) if (unitState(i) === "avail") return i;
+  return -1;
+}
+/* ════════ পাঠ-সূচি ও খোঁজা ════════ */
+export function lessonRows(q) {
+  q = (q || "").trim().toLowerCase();
+  let html = "", lastPart = null;
+  SECTIONS.forEach((sec) => {
+    const items = [];
+    for (let i = sec.from; i <= sec.to; i++) {
+      const u = UNITS[i];
+      if (q && !(u.title + " " + u.sub).toLowerCase().includes(q)) continue;
+      const st = unitState(i), c = S.crowns[i] || 0;
+      const badge = c >= 3 ? "🏆" : c > 0 ? "👑" + c : st === "locked" ? "🔒" : "•";
+      const locked = st === "locked" && !S.isAdmin;
+      items.push(`<button class="li-row${locked ? " locked" : ""}" ${locked ? "disabled" : `onclick="closeModal();tapUnit(${i})"`}>
+        <span class="li-no">${bn(i + 1)}</span><span class="li-t">${u.title}</span><span class="li-b">${badge}</span></button>`);
+    }
+    if (items.length) {
+      if (sec.part !== lastPart) { lastPart = sec.part; html += `<div class="li-part">${sec.part}</div>`; }
+      html += `<div class="li-sec">${sec.t}</div>` + items.join("");
+    }
+  });
+  return html || `<div style="text-align:center;color:var(--gray);padding:24px;font-weight:700">কিছু পাওয়া যায়নি — অন্য শব্দে খোঁজো</div>`;
+}
+export function filterLessons(q) { const el = $("#li-list"); if (el) el.innerHTML = lessonRows(q); }
+export function showLessonIndex() {
+  modal(`<div class="emo">🔍</div><h2>সব পাঠ · খুঁজে জাম্প করো</h2>
+    <input id="li-search" class="li-input" placeholder="বিষয় বা নাম লিখো… (যেমন: ইদাফা, মাসদার, ই'রাব)" oninput="filterLessons(this.value)" autocomplete="off">
+    <div id="li-list" class="li-list">${lessonRows("")}</div>`,
+    `<button class="btn ghost" onclick="closeModal()">বন্ধ করো</button>`);
+  setTimeout(() => { const s = $("#li-search"); if (s) s.focus(); }, 120);
 }
 export function storyLockedMsg() { modal(`<div class="emo">🔒</div><h2>গল্পটি এখনো তালাবদ্ধ</h2><p>এই গল্পের আগের পাঠে অন্তত ১টি মুকুট (👑) জিতলে গল্পটি খুলবে।</p>`, `<button class="btn blue" onclick="closeModal()">ঠিক আছে</button>`); }
 export function tapUnit(i) {
