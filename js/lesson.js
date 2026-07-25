@@ -113,7 +113,7 @@ export function openVocabIntro(ui) {
     <p style="color:var(--gray);font-weight:600;font-size:13px;margin-top:4px">${u.sub}</p></div>
     <div class="learn-card">
       <div class="learn-h">নিয়ম ও ব্যাখ্যা <span>আরবিতে চাপলে উচ্চারণ</span></div>
-      <div class="tipbox learn-tip">${LEARN[ui] || u.tip}</div>
+      <div class="tipbox learn-tip">${LEARN[u.oldId] || u.tip}</div>
     </div>
     <div class="vocab-section-h">নতুন শব্দ <span>🔊 চাপলে উচ্চারণ</span></div>
     <div class="vocab-table">
@@ -141,7 +141,7 @@ export function showRule() {
   if (!L || L.ui == null || L.ui < 0) return;
   const u = UNITS[L.ui];
   modal(`<div class="emo">📘</div><h2>${u.title}</h2>
-    <div class="tipbox learn-tip" style="text-align:left;margin-top:6px">${LEARN[L.ui] || u.tip}</div>`,
+    <div class="tipbox learn-tip" style="text-align:left;margin-top:6px">${LEARN[u.oldId] || u.tip}</div>`,
     `<button class="btn blue" onclick="closeModal()">বুঝেছি, চালিয়ে যাই</button>`);
   document.querySelectorAll("#modal-box .learn-tip .ar").forEach((el) => { el.classList.add("tap-ar"); el.onclick = () => speak(el.textContent.trim()); });
 }
