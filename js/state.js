@@ -52,7 +52,7 @@ export function migrateOrder(st) {
 export const DEF={xp:0,gems:0,hearts:5,streak:0,bestStreak:0,lastDay:null,heartDay:null,
  crowns:{},words:{},badges:{},lessonsDone:0,perfect:0,chestCount:0,rivalXP:null,
  dayXP:0,goalDay:null,goal:30,storiesDone:{},introShown:false,briefShown:false,migNoticeShown:true,
- soundOn:true,visualDone:{},gender:null,wordStars:{},flashDone:0,orderV:4};
+ soundOn:true,visualDone:{},gender:null,wordStars:{},flashDone:0,orderV:4,fontScale:1};
 
 // Mutable, module-live-bound globals shared across every screen — mirrors
 // the original single-file app's top-level `S`/`CUR` variables.

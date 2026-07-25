@@ -2,6 +2,7 @@
    সেখান থেকে npm run build:content দিয়ে js/content.generated.js তৈরি হয়। */
 import { RAW_UNITS, RAW_STORIES, SECTIONS, BOOK_ORDER } from "./content.generated.js";
 export { SECTIONS, BOOK_ORDER };
+export { GLOSSARY } from "./content.generated.js";
 /* ════════ বইয়ের ক্রম ════════
    BOOK_ORDER = পাঠের মূল (স্থায়ী) আইডি বইয়ের ক্রমে সাজানো — এটি এখন একমাত্র
    উৎস content/book.json থেকে তৈরি হয় (npm run build:content)। অ্যাপে পাঠ ভিন্ন

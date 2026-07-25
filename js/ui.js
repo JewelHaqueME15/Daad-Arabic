@@ -1,6 +1,6 @@
 import { $, esc, bn } from "./utils.js";
 import { S, CUR, DEF, save, flushSave } from "./state.js";
-import { UNITS, SECTIONS, STORIES, BADGES, LEVELS, totalCrowns } from "./data.js";
+import { UNITS, SECTIONS, STORIES, BADGES, LEVELS, totalCrowns, GLOSSARY } from "./data.js";
 import { wordIcon, starsHTML } from "./icons.js";
 import * as api from "./api.js";
 import { updateSoundBtn } from "./tts.js";
@@ -54,9 +54,9 @@ export function renderPath() {
   let h = `<div style="text-align:center;padding:4px 20px 0">
    <div style="font-size:13px;color:var(--gray);font-weight:700">📕 এসো আরবি শিখি · কিতাব ও ব্যাকরণ</div>
    <div style="font-size:16px;font-weight:800;margin-top:2px">ইলমের সফরে স্বাগতম, ${esc(CUR || "বন্ধু")}! 🌙</div>
-   <div style="margin:12px 16px 0;border:2px solid var(--line);border-radius:14px;padding:10px 14px;text-align:right">
+   <div onclick="showGoalPicker()" style="margin:12px 16px 0;border:2px solid var(--line);border-radius:14px;padding:10px 14px;text-align:right;cursor:pointer">
      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800">
-       <span style="color:${gPct >= 100 ? "var(--green-d)" : "var(--gray)"}">${gPct >= 100 ? "🎯 লক্ষ্য অর্জিত! মাশাআল্লাহ" : "🎯 আজকের লক্ষ্য"}</span>
+       <span style="color:${gPct >= 100 ? "var(--green-d)" : "var(--gray)"}">${gPct >= 100 ? "🎯 লক্ষ্য অর্জিত! মাশাআল্লাহ" : "🎯 আজকের লক্ষ্য"} <span style="color:var(--blue);font-size:11px">✎</span></span>
        <span style="color:var(--gray)">⚡${Math.min(S.dayXP, S.goal)}/${S.goal} XP</span>
      </div>
      <div style="height:10px;background:var(--line);border-radius:6px;margin-top:6px;overflow:hidden">
@@ -138,6 +138,62 @@ export function lessonRows(q) {
   return html || `<div style="text-align:center;color:var(--gray);padding:24px;font-weight:700">কিছু পাওয়া যায়নি — অন্য শব্দে খোঁজো</div>`;
 }
 export function filterLessons(q) { const el = $("#li-list"); if (el) el.innerHTML = lessonRows(q); }
+
+/* ════════ দৈনিক লক্ষ্য ════════ */
+const GOAL_OPTIONS = [
+  { v: 10, t: "আরামদায়ক", s: "১০ XP · দিনে ১টি পাঠ" },
+  { v: 20, t: "সহজ", s: "২০ XP · রোজ একটু একটু" },
+  { v: 30, t: "নিয়মিত", s: "৩০ XP · ভারসাম্যপূর্ণ" },
+  { v: 50, t: "কঠোর", s: "৫০ XP · দ্রুত এগোও" },
+];
+export function setGoal(v) { S.goal = v; save(); closeModal(); showTab("home"); }
+export function showGoalPicker() {
+  modal(`<div class="emo">🎯</div><h2>দৈনিক লক্ষ্য বেছে নাও</h2>
+    <p>প্রতিদিন কত XP অর্জনের চেষ্টা করবে?</p>
+    <div class="opt-list">${GOAL_OPTIONS.map((g) => `<button class="opt-card${S.goal === g.v ? " on" : ""}" onclick="setGoal(${g.v})">
+      <span class="oc-t">${g.t} — ⚡${g.v}</span><span class="oc-s">${g.s}</span></button>`).join("")}</div>`,
+    `<button class="btn ghost" onclick="closeModal()">বন্ধ করো</button>`);
+}
+
+/* ════════ ফন্ট-সাইজ (অ্যাক্সেসিবিলিটি) ════════ */
+const FONT_OPTIONS = [
+  { v: 0.9, t: "ছোট" }, { v: 1, t: "স্বাভাবিক" }, { v: 1.15, t: "বড়" }, { v: 1.3, t: "আরও বড়" },
+];
+export function applyFontScale(v) {
+  // zoom দিয়ে পুরো লেখা সমানুপাতে বড়/ছোট — px ফন্টেও কাজ করে, লেআউট ভাঙে না
+  document.documentElement.style.zoom = v || 1;
+}
+export function setFontScale(v) { S.fontScale = v; save(); applyFontScale(v); showFontPicker(); }
+export function showFontPicker() {
+  modal(`<div class="emo">🔠</div><h2>লেখার আকার</h2>
+    <p>চোখের আরামে যেটি ভালো লাগে বেছে নাও।</p>
+    <div class="opt-list">${FONT_OPTIONS.map((f) => `<button class="opt-card${(S.fontScale || 1) === f.v ? " on" : ""}" onclick="setFontScale(${f.v})">
+      <span class="oc-t" style="font-size:${15 * f.v}px">${f.t}</span><span class="oc-s">অ আ ك ت — ${Math.round(f.v * 100)}%</span></button>`).join("")}</div>`,
+    `<button class="btn" onclick="closeModal()">ঠিক আছে</button>`);
+}
+
+/* ════════ ব্যাকরণ-পরিভাষা কোষ ════════ */
+export function glossaryRows(q) {
+  q = (q || "").trim().toLowerCase();
+  let html = "";
+  for (const cat of GLOSSARY) {
+    const items = cat.terms.filter((tm) => !q || (tm.t + " " + tm.b + " " + tm.a).toLowerCase().includes(q));
+    if (!items.length) continue;
+    html += `<div class="gl-cat">${cat.name}</div>`;
+    html += items.map((tm) => `<div class="gl-row">
+      <div class="gl-head"><span class="ar gl-ar">${tm.a}</span><button class="gl-sp" onclick="speak('${tm.a.replace(/'/g, "\\'")}')">🔊</button><span class="gl-t">${tm.t}</span></div>
+      <div class="gl-b">${tm.b}</div></div>`).join("");
+  }
+  return html || `<div style="text-align:center;color:var(--gray);padding:24px;font-weight:700">কিছু পাওয়া যায়নি</div>`;
+}
+export function filterGlossary(q) { const el = $("#gl-list"); if (el) el.innerHTML = glossaryRows(q); }
+export function showGlossary() {
+  modal(`<div class="emo">📚</div><h2>ব্যাকরণ-পরিভাষা কোষ</h2>
+    <input id="gl-search" class="li-input" placeholder="পরিভাষা খুঁজো… (মাসদার, ই'রাব, তাশবীহ)" oninput="filterGlossary(this.value)" autocomplete="off">
+    <div id="gl-list" class="li-list gl-list">${glossaryRows("")}</div>`,
+    `<button class="btn ghost" onclick="closeModal()">বন্ধ করো</button>`);
+  setTimeout(() => { const s = $("#gl-search"); if (s) s.focus(); }, 120);
+}
 export function showLessonIndex() {
   modal(`<div class="emo">🔍</div><h2>সব পাঠ · খুঁজে জাম্প করো</h2>
     <input id="li-search" class="li-input" placeholder="বিষয় বা নাম লিখো… (যেমন: ইদাফা, মাসদার, ই'রাব)" oninput="filterLessons(this.value)" autocomplete="off">

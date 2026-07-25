@@ -13,6 +13,7 @@ const fail = (m) => { console.error("✖ কন্টেন্ট ত্রু�
 
 const book = readJSON(path.join(ROOT, "book.json"));
 const iconsFile = readJSON(path.join(ROOT, "icons.json"));
+const glossaryFile = fs.existsSync(path.join(ROOT, "glossary.json")) ? readJSON(path.join(ROOT, "glossary.json")) : { categories: [] };
 
 /* ── পাঠ পড়া ও যাচাই ── */
 const lessons = book.order.map((name) => {
@@ -77,6 +78,7 @@ export const SECTIONS = ${JSON.stringify(book.sections)};
 export const RAW_STORIES = ${JSON.stringify(stories)};
 export const LEARN = ${JSON.stringify(LEARN)};
 export const ICONS = ${JSON.stringify(iconsFile.icons)};
+export const GLOSSARY = ${JSON.stringify(glossaryFile.categories)};
 `;
 const target = path.join(process.cwd(), "js", "content.generated.js");
 
