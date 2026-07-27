@@ -1,4 +1,5 @@
-import { $, esc, shuffle, pick, pickExtra, tk, tashkeelLevel } from "./utils.js";
+import { $, esc, shuffle, pick, pickExtra, tk, tashkeelLevel, normAr, sayMatches } from "./utils.js";
+import { speechSupported, listenArabic } from "./speech.js";
 import { S, save, bumpStreak } from "./state.js";
 import { UNITS, BADGES, LEVELS } from "./data.js";
 import { LEARN } from "./lessons.js";
@@ -15,10 +16,10 @@ export let L = null; // চলমান পাঠ
    সহজ→কঠিন ঢালটা সবসময় বজায় থাকে। */
 const DIFFICULTY = {
   pic_mc: 1, pic_match: 1, pic_ba: 2, listen_pic: 3,
-  match: 4, mc_ab: 5,
-  mc_ba: 6, listen: 7,
-  fill: 8, tr: 9, qa: 10,
-  build: 11, build_ba: 12,
+  trace: 4, match: 4, mc_ab: 5,
+  mc_ba: 6, listen: 7, say: 8,
+  fill: 9, tr: 10, qa: 11,
+  build: 12, build_ba: 13,
 };
 function orderByDifficulty(ex) {
   return shuffle(ex).sort((a, b) => (DIFFICULTY[a.t] || 6) - (DIFFICULTY[b.t] || 6));
@@ -69,6 +70,11 @@ export function genExercises(ui) {
   picVocab.slice(2, 4).forEach((w) => ex.push({ t: "pic_ba", w, opts: shuffle([w, ...picDistractors(allVimg, w, 3)]) }));
   picVocab.slice(4, 6).forEach((w) => ex.push({ t: "listen_pic", w, opts: shuffle([w, ...picDistractors(allVimg, w, 3)]) }));
   if (picVocab.length >= 4) ex.push({ t: "pic_match", pairs: picVocab.slice(0, 4) });
+  // দক্ষতা: শোনা+বলা ও লেখা। এক-শব্দের (স্পেসহীন) শব্দ থেকে বাছাই।
+  const single = shuffle(u.vocab.filter((v) => !/\s/.test(v.a) && normAr(v.a).length >= 2));
+  if (speechSupported() && single.length) ex.push({ t: "say", w: single[0] });        // বলো — কণ্ঠ যাচাই
+  const traceW = single.find((v) => normAr(v.a).length <= 6) || single[1] || single[0];
+  if (traceW) ex.push({ t: "trace", w: traceW });                                       // লেখো — ট্রেসিং
   return orderByDifficulty(ex);
 }
 /* রিভিউ: শেখা শব্দ থেকে মিশ্র অনুশীলন */
@@ -191,6 +197,22 @@ export function renderEx() {
     A.innerHTML = `<div class="ex-title">শূন্যস্থানে সঠিক শব্দটি বসাও</div>
     <div class="big-ar" style="font-size:30px;line-height:2">${tk(e.q,lvl)}</div>
     <div class="opts grid2">${e.opts.map((o, i) => `<button class="opt" data-i="${i}" onclick="selOpt(this,'${esc(o)}')"><span class="ar">${tk(o,lvl)}</span></button>`).join("")}</div>`;
+  } else if (e.t === "say") {
+    A.innerHTML = `<div class="ex-title">যা শুনছ, সেটি নিজে বলো 🎤</div>
+    <div class="speak-row"><button class="speak-btn" style="width:64px;height:64px;font-size:30px" onclick="speak('${e.w.a.replace(/'/g, "\\'")}')">🔊</button></div>
+    <div class="say-word ar">${tk(e.w.a, lvl)}</div>
+    <div class="say-mic"><button id="say-btn" class="btn blue" onclick="startSay()">🎤 চাপো ও বলো</button></div>
+    <div id="say-fb" class="say-fb"></div>
+    <p style="text-align:center;color:var(--gray);font-weight:600;font-size:12.5px;margin-top:6px">শুদ্ধ হলে এগিয়ে যাবে · না পারলে নিচে “এড়িয়ে যাও”</p>`;
+    setTimeout(() => speak(e.w.a), 300);
+  } else if (e.t === "trace") {
+    A.innerHTML = `<div class="ex-title">অক্ষরের উপর আঙুল বুলিয়ে লেখো ✍️</div>
+    <div class="speak-row"><button class="speak-btn" onclick="speak('${e.w.a.replace(/'/g, "\\'")}')">🔊</button><span class="ar" style="font-size:26px">${tk(e.w.a, lvl)}</span></div>
+    <div class="trace-hint"><span class="ar-dir">← ডান থেকে বাম</span></div>
+    <div id="trace-wrap" class="trace-wrap"><canvas id="trace-cv"></canvas><span class="trace-start">● শুরু</span></div>
+    <div class="trace-actions"><button class="btn ghost" onclick="traceClear()">↺ মুছে ফেলো</button></div>
+    <div id="trace-fb" class="say-fb"></div>`;
+    setTimeout(() => initTrace(e.w.a, lvl), 60);
   } else if (e.t === "pic_mc") {
     A.innerHTML = `<div class="ex-title">এটি কী? (ছবি দেখে আরবি শব্দ বাছাই করো)</div>
     <div class="pic-emo">${e.w.img}</div>
@@ -280,11 +302,116 @@ export function tapTile(el) {
   $("#build-answer").appendChild(chip);
   $("#btn-check").disabled = false;
 }
+/* ── ইন্টারঅ্যাকটিভ সফলতা (বলো / লেখো) — মিলে গেলে "চালিয়ে যাও" খোলে ── */
+function interactiveSuccess(word, msg) {
+  if (L.answered) return;
+  L.answered = true;
+  bumpCombo(true);
+  if (word) L.correctWords.add(word);
+  hideSkip();
+  feedback(true, msg || praise());
+  const cb = $("#btn-check");
+  cb.disabled = false; cb.textContent = "চালিয়ে যাও"; cb.onclick = () => next(true);
+}
+/* ── বলো (কণ্ঠ যাচাই) ── */
+export function startSay() {
+  const e = L.ex[L.i], btn = $("#say-btn"), fb = $("#say-fb");
+  if (!btn || L.answered) return;
+  btn.disabled = true; btn.textContent = "🎙️ শুনছি…";
+  fb.className = "say-fb"; fb.textContent = "";
+  const reset = (txt) => { const b = $("#say-btn"); if (b) { b.disabled = false; b.textContent = txt || "🎤 আবার বলো"; } };
+  listenArabic({
+    onResult: (alts) => {
+      if (sayMatches(alts, e.w.a)) {
+        if (fb) { fb.className = "say-fb ok"; fb.textContent = "✅ চমৎকার উচ্চারণ!"; }
+        interactiveSuccess(e.w.a, "🎤 শুদ্ধ উচ্চারণ! " + praise());
+      } else {
+        sndBad();
+        if (fb) fb.innerHTML = "❌ ঠিক হয়নি, আবার বলো।" + (alts && alts[0] ? ` <span style="color:var(--gray)">(শুনেছি: ${esc(alts[0])})</span>` : "");
+        reset();
+      }
+    },
+    onError: (err) => {
+      if (fb) fb.textContent = err === "not-allowed" ? "🎤 মাইক্রোফোনের অনুমতি দাও, অথবা নিচে এড়িয়ে যাও।"
+        : err === "no-speech" ? "কিছু শুনতে পাইনি — আবার বলো।" : "আবার চেষ্টা করো।";
+      reset();
+    },
+    onEnd: () => reset(),
+  });
+}
+/* ── লেখো (ট্রেসিং) ── */
+let traceState = null;
+const traceFont = (px) => `700 ${px}px 'Scheherazade New','Noto Naskh Arabic',serif`;
+export function initTrace(word, lvl) {
+  const cv = $("#trace-cv"), wrap = $("#trace-wrap");
+  if (!cv || !wrap) return;
+  const W = Math.max(240, wrap.clientWidth), H = 190, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + "px"; cv.style.height = H + "px";
+  const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
+  const shown = tk(word, lvl);
+  const mask = document.createElement("canvas"); mask.width = W; mask.height = H;
+  const mctx = mask.getContext("2d");
+  let size = 110; mctx.font = traceFont(size); mctx.textAlign = "center"; mctx.textBaseline = "middle"; mctx.direction = "rtl";
+  while (mctx.measureText(shown).width > W - 24 && size > 34) { size -= 4; mctx.font = traceFont(size); }
+  mctx.fillStyle = "#000"; mctx.fillText(shown, W / 2, H / 2);
+  const user = document.createElement("canvas"); user.width = W; user.height = H;
+  const uctx = user.getContext("2d");
+  uctx.lineWidth = 24; uctx.lineCap = "round"; uctx.lineJoin = "round"; uctx.strokeStyle = "#000";
+  traceState = { cv, ctx, mask, user, uctx, W, H, drawing: false, last: null, done: false, word };
+  redrawTrace();
+  const pos = (ev) => { const r = cv.getBoundingClientRect(); const p = ev.touches ? ev.touches[0] : ev; return { x: p.clientX - r.left, y: p.clientY - r.top }; };
+  cv.onpointerdown = (ev) => { ev.preventDefault(); traceState.drawing = true; traceState.last = pos(ev); };
+  cv.onpointermove = (ev) => {
+    if (!traceState.drawing) return; ev.preventDefault();
+    const p = pos(ev), u = traceState.uctx;
+    u.beginPath(); u.moveTo(traceState.last.x, traceState.last.y); u.lineTo(p.x, p.y); u.stroke();
+    traceState.last = p; redrawTrace();
+  };
+  const end = () => { if (traceState.drawing) { traceState.drawing = false; checkTrace(); } };
+  cv.onpointerup = end; cv.onpointerleave = end; cv.onpointercancel = end;
+}
+function redrawTrace() {
+  const s = traceState; if (!s) return;
+  s.ctx.clearRect(0, 0, s.W, s.H);
+  s.ctx.globalAlpha = 0.16; s.ctx.drawImage(s.mask, 0, 0); s.ctx.globalAlpha = 1;   // ম্লান টেমপ্লেট
+  const tmp = document.createElement("canvas"); tmp.width = s.W; tmp.height = s.H;
+  const t = tmp.getContext("2d"); t.drawImage(s.user, 0, 0);
+  t.globalCompositeOperation = "source-in"; t.fillStyle = "#1cb0f6"; t.fillRect(0, 0, s.W, s.H); // ব্যবহারকারীর কালি নীল
+  s.ctx.drawImage(tmp, 0, 0);
+}
+function checkTrace() {
+  const s = traceState; if (!s || s.done) return;
+  const mi = s.mask.getContext("2d").getImageData(0, 0, s.W, s.H).data;
+  const ui = s.uctx.getImageData(0, 0, s.W, s.H).data;
+  const C = 6; let ink = 0, hit = 0;
+  for (let y = 0; y < s.H; y += C) for (let x = 0; x < s.W; x += C) {
+    let m = false, u = false;
+    for (let dy = 0; dy < C; dy++) for (let dx = 0; dx < C; dx++) {
+      const idx = ((y + dy) * s.W + (x + dx)) * 4 + 3;
+      if (mi[idx] > 40) m = true;
+      if (ui[idx] > 40) u = true;
+    }
+    if (m) { ink++; if (u) hit++; }
+  }
+  const cov = ink ? hit / ink : 0, fb = $("#trace-fb");
+  if (cov >= 0.55) {
+    s.done = true;
+    if (fb) { fb.className = "say-fb ok"; fb.textContent = "✅ সুন্দর লেখা!"; }
+    interactiveSuccess(s.word, "✍️ লেখা সম্পূর্ণ! " + praise());
+  } else if (fb) {
+    fb.className = "say-fb"; fb.textContent = `আরেকটু অক্ষরের উপর লেখো — ${Math.round(cov * 100)}% হয়েছে`;
+  }
+}
+export function traceClear() {
+  const s = traceState; if (!s) return;
+  s.uctx.clearRect(0, 0, s.W, s.H); s.done = false; redrawTrace();
+  const fb = $("#trace-fb"); if (fb) { fb.className = "say-fb"; fb.textContent = ""; }
+}
 /* ── যাচাই ── */
 /* প্রশ্নের সঠিক উত্তরটি — যাচাই ও "এড়িয়ে যাও" দুই জায়গাতেই লাগে */
 function correctTextFor(e) {
   if (e.t === "mc_ab") return e.w.b;
-  if (e.t === "mc_ba" || e.t === "listen" || e.t === "pic_mc" || e.t === "pic_ba" || e.t === "listen_pic") return e.w.a;
+  if (e.t === "mc_ba" || e.t === "listen" || e.t === "pic_mc" || e.t === "pic_ba" || e.t === "listen_pic" || e.t === "say" || e.t === "trace") return e.w.a;
   if (e.t === "build") return e.s.a;
   if (e.t === "build_ba") return e.s.b;
   if (e.t === "tr") return e.s.b;

@@ -312,6 +312,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 details.admin-acc summary{cursor:pointer;font-weight:800;font-size:15px;padding:6px 0;color:var(--purple)}
 /* ═══ ছবি-ভিত্তিক প্রশ্ন (pic_mc) ═══ */
 .pic-emo{font-size:88px;text-align:center;margin:14px 0 26px;line-height:1}
+/* ═══ বলো (কণ্ঠ যাচাই) ═══ */
+.say-word{font-family:'Scheherazade New','Noto Naskh Arabic',serif;font-size:46px;font-weight:700;text-align:center;margin:6px 0 18px;line-height:1.7}
+.say-mic{display:flex;justify-content:center;margin-bottom:10px}
+.say-mic .btn{width:auto;padding:14px 26px}
+.say-fb{text-align:center;font-weight:700;font-size:14.5px;min-height:22px;margin-top:6px}
+.say-fb.ok{color:var(--green-d)}
+.say-fb.bad{color:var(--red)}
+/* ═══ লেখো (ট্রেসিং) ═══ */
+.trace-hint{text-align:center;margin:2px 0 6px}
+.trace-hint .ar-dir{display:inline-block;font-weight:800;font-size:13px;color:var(--blue);background:rgba(28,176,246,.1);padding:4px 12px;border-radius:20px}
+.trace-wrap{position:relative;margin:0 6px;border:2px dashed var(--blue);border-radius:16px;background:repeating-linear-gradient(#fff,#fff 46px,rgba(28,176,246,.09) 47px,#fff 48px);overflow:hidden;touch-action:none}
+.trace-wrap canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
+.trace-wrap .trace-start{position:absolute;top:6px;right:8px;font-size:11px;font-weight:800;color:var(--blue);background:#fff;padding:1px 7px;border-radius:9px;border:1px solid var(--line)}
+.trace-actions{display:flex;justify-content:center;margin-top:10px}
+.trace-actions .btn{width:auto;padding:10px 22px}
 /* ═══ ছবি দেখে বাক্য বানাও (visual challenge) ═══ */
 #scr-visual{padding-bottom:110px}
 #visual-top{display:flex;align-items:center;gap:12px;padding:14px 16px;position:sticky;top:0;background:#fff;border-bottom:2px solid var(--line);z-index:20}

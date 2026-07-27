@@ -2,7 +2,7 @@ import { $ } from "./utils.js";
 import { S, DEF, setSession, dailyRefresh, save, migrateOrder } from "./state.js";
 import * as api from "./api.js";
 import { showTab, tapUnit, buyHearts, storyLockedMsg, resetAll, modal, closeModal, updateTop, renderLeague, showLessonIndex, filterLessons, showGoalPicker, setGoal, showFontPicker, setFontScale, applyFontScale, showGlossary, filterGlossary } from "./ui.js";
-import { startLesson, startReview, openVocabIntro, selOpt, tapMatch, tapTile, quitLesson, afterResult, showRule, skipEx } from "./lesson.js";
+import { startLesson, startReview, openVocabIntro, selOpt, tapMatch, tapTile, quitLesson, afterResult, showRule, skipEx, startSay, traceClear } from "./lesson.js";
 import { openStory, finishStory } from "./stories.js";
 import { vcTapTile } from "./visual.js";
 import { startFlash, flipCard, flashKnown, flashAgain, quitFlash } from "./flash.js";
@@ -143,7 +143,7 @@ function enterApp() {
 Object.assign(window, {
   doLogin, doLogout, toggleSound, quitLesson, showTab, finishStory, resetAll,
   closeModal, tapUnit, storyLockedMsg, openVocabIntro, buyHearts, speak,
-  vcTapTile, selOpt, tapMatch, tapTile, afterResult, startReview, startLesson, openStory, showRule,
+  vcTapTile, selOpt, tapMatch, tapTile, afterResult, startReview, startLesson, openStory, showRule, startSay, traceClear,
   nextIntro, setGender, showGenderAsk,
   startFlash, flipCard, flashKnown, flashAgain, quitFlash, skipEx, renderLeague,
   showLessonIndex, filterLessons,
