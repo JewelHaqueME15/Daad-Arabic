@@ -52,7 +52,7 @@ export function renderPath() {
   const p = $("#path");
   const gPct = Math.min(100, Math.round(S.dayXP / S.goal * 100));
   let h = `<div style="text-align:center;padding:4px 20px 0">
-   <div style="font-size:13px;color:var(--gray);font-weight:700">📕 এসো আরবি শিখি · কিতাব ও ব্যাকরণ</div>
+   <div style="font-size:13px;color:var(--gray);font-weight:700">Daad · আরবি ভাষা — কিতাব ও ব্যাকরণ</div>
    <div style="font-size:16px;font-weight:800;margin-top:2px">ইলমের সফরে স্বাগতম, ${esc(CUR || "বন্ধু")}! 🌙</div>
    <div onclick="showGoalPicker()" style="margin:12px 16px 0;border:2px solid var(--line);border-radius:14px;padding:10px 14px;text-align:right;cursor:pointer">
      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800">
