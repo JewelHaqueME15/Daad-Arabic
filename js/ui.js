@@ -4,6 +4,8 @@ import { UNITS, SECTIONS, STORIES, BADGES, LEVELS, totalCrowns, GLOSSARY } from 
 import { wordIcon, starsHTML } from "./icons.js";
 import * as api from "./api.js";
 import { updateSoundBtn } from "./tts.js";
+import { dueCount } from "./srs.js";
+import { quranCoverage } from "./quran.js";
 
 export function updateTop() { $("#st-streak").textContent = S.streak; $("#st-gems").textContent = S.gems; $("#st-hearts").textContent = S.hearts; updateSoundBtn(); }
 export function xpFloat(t) { const d = document.createElement("div"); d.className = "xp-float"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1100); }
@@ -69,9 +71,25 @@ export function renderPath() {
     ${next >= 0 ? `<button class="btn" style="flex:1" onclick="tapUnit(${next})">▶ চালিয়ে যাও — পাঠ ${bn(next + 1)}</button>` : ""}
     <button class="btn ghost" style="${next >= 0 ? "flex:0 0 54px;padding:14px 0" : "flex:1"}" onclick="showLessonIndex()">🔍${next >= 0 ? "" : " পাঠ খুঁজো"}</button>
   </div>`;
-  // শেখা শব্দ যথেষ্ট হলে হোম থেকেই দ্রুত অনুশীলন — খুঁজতে হবে না
+  // শেখা শব্দ যথেষ্ট হলে হোম থেকেই দ্রুত অনুশীলন — স্পেসড রিপিটিশন: আজ যেগুলো ঝালাই দরকার
   const learnedCount = Object.keys(S.words).length;
-  if (learnedCount >= 4) h += `<div style="padding:8px 16px 0"><button class="btn blue" onclick="startReview()">🔁 শেখা শব্দ অনুশীলন করো (${learnedCount}টি)</button></div>`;
+  if (learnedCount >= 4) {
+    const due = dueCount();
+    h += due > 0
+      ? `<div style="padding:8px 16px 0"><button class="btn blue" onclick="startReview()">🔁 আজ ঝালাই করো — ${bn(due)}টি শব্দ প্রস্তুত</button></div>`
+      : `<div style="padding:8px 16px 0"><button class="btn ghost" onclick="startReview()">✅ আজকের ঝালাই শেষ · আরও অনুশীলন (${bn(learnedCount)}টি)</button></div>`;
+  }
+  // কুরআন-শব্দ অগ্রগতি — লক্ষ্যের সাথে সরাসরি সংযোগ (চাপলে বিস্তারিত)
+  if (learnedCount >= 4) {
+    const q = quranCoverage();
+    h += `<div onclick="showQuranProgress()" style="margin:12px 16px 0;border:2px solid var(--line);border-radius:14px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:12px">
+      <div style="width:44px;height:44px;border-radius:50%;flex:0 0 44px;background:conic-gradient(var(--green) ${q.pct}%,var(--line) 0);display:flex;align-items:center;justify-content:center">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--bg,#fff);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">🕋</div></div>
+      <div style="flex:1;text-align:right">
+        <div style="font-size:13.5px;font-weight:800">কুরআনের শব্দ চেনা — ${bn(q.known)}/${bn(q.total)}</div>
+        <div style="font-size:11.5px;color:var(--gray);font-weight:600">সবচেয়ে বেশি ব্যবহৃত শব্দের ${bn(q.pct)}% · চাপো ›</div>
+      </div></div>`;
+  }
   let lastPart = null;
   SECTIONS.forEach((sec, si) => {
     const done = UNITS.slice(sec.from, sec.to + 1).filter((u) => (S.crowns[u.id] || 0) > 0).length;
@@ -276,6 +294,7 @@ export function renderProfile() {
   $("#pf-sub").textContent = `লেভেল ${lvl + 1} · পরের লেভেলে ${150 - (S.xp % 150)} XP বাকি`;
   $("#pf-xp").textContent = S.xp; $("#pf-streak").textContent = S.streak + " 🔥";
   $("#pf-crowns").textContent = totalCrowns(S) + "/" + (UNITS.length * 3); $("#pf-words").textContent = Object.keys(S.words).length;
+  renderQuranProgress();
   $("#badge-grid").innerHTML = BADGES.map((b) => `<div class="badge ${S.badges[b.id] ? "" : "off"}"><div class="emo">${b.emo}</div><div class="nm">${b.nm}</div><div style="font-size:10.5px;color:var(--gray);font-weight:600">${b.desc}</div></div>`).join("");
   const wrap = $("#admin-panel-wrap");
   if (S.isAdmin) {
@@ -288,6 +307,35 @@ export function renderProfile() {
       <div>${storyRows}</div>
     </details>`;
   } else { wrap.innerHTML = ""; }
+}
+/* ════════ কুরআন-শব্দ অগ্রগতি (প্রোফাইলে + বিস্তারিত মডাল) ════════ */
+function renderQuranProgress() {
+  const wrap = $("#quran-progress-wrap"); if (!wrap) return;
+  const q = quranCoverage();
+  wrap.innerHTML = `<h2>🕋 কুরআন-শব্দ অগ্রগতি</h2>
+    <div class="qcov" onclick="showQuranProgress()">
+      <div class="qring" style="background:conic-gradient(var(--green) ${q.pct}%,var(--line) 0)"><div class="qring-in"><b>${bn(q.pct)}%</b></div></div>
+      <div class="qcov-txt">
+        <div class="qcov-big">${bn(q.known)} / ${bn(q.total)} <span>মূল শব্দ চেনা</span></div>
+        <div class="qcov-sub">এই শব্দগুলো কুরআনে বহুবার আসে — তুমি এখন প্রায় <b>${bn(q.occPct)}%</b> শব্দ-উপস্থিতি চিনে ফেলো (আনুমানিক)।</div>
+        <div class="qcov-cta">বিস্তারিত ও পরবর্তী শব্দ দেখো ›</div>
+      </div>
+    </div>`;
+}
+export function showQuranProgress() {
+  const q = quranCoverage();
+  const next = q.miss.slice().sort((a, b) => b.n - a.n).slice(0, 8);
+  const nextHTML = next.length ? `<div class="qnext-h">🎯 এরপর শিখলে সবচেয়ে কাজে দেবে</div>
+    <div class="qnext">${next.map((e) => `<button class="qnext-row" onclick="speak('${e.w.replace(/'/g, "\\'")}')">
+      <span class="ar">${e.w}</span><span class="qb">${e.bn}</span><span class="qn">🔊</span></button>`).join("")}</div>`
+    : `<p style="color:var(--green-d);font-weight:800;text-align:center;margin-top:8px">মাশাআল্লাহ! তালিকার সব মূল শব্দ চেনা হয়ে গেছে! 🎉</p>`;
+  modal(`<div class="emo">🕋</div><h2>কুরআন-শব্দ অগ্রগতি</h2>
+    <div class="qmodal-ring" style="background:conic-gradient(var(--green) ${q.pct}%,var(--line) 0)"><div class="qring-in2"><b>${bn(q.known)}</b><span>/${bn(q.total)}</span></div></div>
+    <p style="font-weight:700;margin-top:10px">কুরআনে সবচেয়ে বেশি ব্যবহৃত <b>${bn(q.total)}</b>টি মূল শব্দের মধ্যে <b>${bn(q.known)}</b>টি তুমি চেনো।</p>
+    <p style="color:var(--gray);font-weight:600;font-size:13px">এই শব্দগুলোর মিলিত উপস্থিতির প্রায় <b>${bn(q.occPct)}%</b> তুমি চিনে ফেলো — অর্থাৎ তিলাওয়াতের সময় বহু শব্দ পরিচিত লাগবে ইনশাআল্লাহ।</p>
+    ${nextHTML}`,
+    `<button class="btn" onclick="closeModal()">আলহামদুলিল্লাহ — চালিয়ে যাই</button>`);
+  document.querySelectorAll("#modal-box .qnext-row .ar").forEach((el) => el.classList.add("tap-ar"));
 }
 export function resetAll() {
   if (confirm("সত্যিই সব প্রগ্রেস মুছে ফেলবে?")) {

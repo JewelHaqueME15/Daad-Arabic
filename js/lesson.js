@@ -1,6 +1,7 @@
 import { $, esc, shuffle, pick, pickExtra, tk, tashkeelLevel, normAr, sayMatches } from "./utils.js";
 import { speechSupported, listenArabic } from "./speech.js";
 import { S, save, bumpStreak } from "./state.js";
+import { seedWord, scheduleWord, dueWords } from "./srs.js";
 import { UNITS, BADGES, LEVELS } from "./data.js";
 import { LEARN } from "./lessons.js";
 import { ICONS } from "./icons.js";
@@ -91,10 +92,16 @@ export function genReviewExercises(ws) {
   return orderByDifficulty(ex);
 }
 export function startReview() {
-  const ws = Object.entries(S.words).map(([a, b]) => ({ a, b }));
-  if (ws.length < 4) { modal(`<div class="emo">🌱</div><h2>আরেকটু শেখো!</h2><p>অন্তত ৪টি শব্দ শিখলে অনুশীলন খুলবে। আগে কয়েকটি পাঠ শেষ করো।</p>`, `<button class="btn blue" onclick="closeModal()">ঠিক আছে</button>`); return; }
+  const known = Object.entries(S.words).map(([a, b]) => ({ a, b }));
+  if (known.length < 4) { modal(`<div class="emo">🌱</div><h2>আরেকটু শেখো!</h2><p>অন্তত ৪টি শব্দ শিখলে অনুশীলন খুলবে। আগে কয়েকটি পাঠ শেষ করো।</p>`, `<button class="btn blue" onclick="closeModal()">ঠিক আছে</button>`); return; }
   if (S.hearts <= 0) { modal(`<div class="emo">💔</div><h2>হৃদয় শেষ!</h2><p>আগামীকাল হৃদয়গুলো আবার ভরে যাবে।</p>`, `<button class="btn ghost" onclick="closeModal()">পরে</button>`); return; }
-  L = { ui: -1, review: true, ex: genReviewExercises(ws), i: 0, wrong: 0, correctWords: new Set(), combo: 0, maxCombo: 0 };
+  // আজ ঝালাইয়ের জন্য প্রস্তুত (due) শব্দ আগে; ৬টির কম হলে বাকি শেখা শব্দ দিয়ে ভরাও
+  let pool = dueWords();
+  if (pool.length < 6) {
+    const extra = shuffle(known.filter((w) => !pool.some((d) => d.a === w.a)));
+    pool = pool.concat(extra).slice(0, Math.min(known.length, Math.max(10, pool.length)));
+  }
+  L = { ui: -1, review: true, ex: genReviewExercises(pool), i: 0, wrong: 0, correctWords: new Set(), combo: 0, maxCombo: 0 };
   ["home", "words", "league", "profile"].forEach((x) => $("#scr-" + x).classList.remove("active"));
   $("#scr-result").classList.remove("active"); $("#scr-story").classList.remove("active"); $("#scr-vocab").classList.remove("active"); $("#scr-visual").classList.remove("active");
   $("#topbar").style.display = "none"; $("#tabbar").style.display = "none";
@@ -499,8 +506,13 @@ export function finishLesson() {
   L.wasFirstCompletion = !L.review && (S.crowns[L.ui] || 0) === 0;
   if (!L.review) {
     S.crowns[L.ui] = Math.min(3, (S.crowns[L.ui] || 0) + 1);
-    L.correctWords.forEach((w) => { const v = UNITS[L.ui].vocab.find((x) => x.a === w); if (v) S.words[w] = v.b; });
-    UNITS[L.ui].vocab.forEach((v) => { if (Math.random() < .4) S.words[v.a] = v.b; });
+    L.correctWords.forEach((w) => { const v = UNITS[L.ui].vocab.find((x) => x.a === w); if (v) { S.words[w] = v.b; seedWord(w, true); } });
+    UNITS[L.ui].vocab.forEach((v) => { if (Math.random() < .4) { S.words[v.a] = v.b; seedWord(v.a, false); } });
+  } else {
+    // ঝালাই শেষে প্রতিটি পরীক্ষিত শব্দের সূচি হালনাগাদ — সঠিক হলে পিছিয়ে, ভুলে সামনে
+    const tested = new Set();
+    L.ex.forEach((e) => { if (e.w) tested.add(e.w.a); if (e.pairs) e.pairs.forEach((p) => tested.add(p.a)); });
+    tested.forEach((a) => scheduleWord(a, L.correctWords.has(a)));
   }
   if (!hadGoal && S.dayXP >= S.goal) xpFloat("🎯 দৈনিক লক্ষ্য!");
   bumpStreak(); S.chestCount++;

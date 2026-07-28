@@ -1,7 +1,8 @@
 import { $ } from "./utils.js";
 import { S, DEF, setSession, dailyRefresh, save, migrateOrder } from "./state.js";
 import * as api from "./api.js";
-import { showTab, tapUnit, buyHearts, storyLockedMsg, resetAll, modal, closeModal, updateTop, renderLeague, showLessonIndex, filterLessons, showGoalPicker, setGoal, showFontPicker, setFontScale, applyFontScale, showGlossary, filterGlossary } from "./ui.js";
+import { showTab, tapUnit, buyHearts, storyLockedMsg, resetAll, modal, closeModal, updateTop, renderLeague, showLessonIndex, filterLessons, showGoalPicker, setGoal, showFontPicker, setFontScale, applyFontScale, showGlossary, filterGlossary, showQuranProgress } from "./ui.js";
+import { migrateSrs } from "./srs.js";
 import { startLesson, startReview, openVocabIntro, selOpt, tapMatch, tapTile, quitLesson, afterResult, showRule, skipEx, startSay, traceClear } from "./lesson.js";
 import { openStory, finishStory } from "./stories.js";
 import { vcTapTile } from "./visual.js";
@@ -121,6 +122,7 @@ function enterApp() {
   $("#scr-login").classList.remove("active");
   $("#topbar").style.display = "flex"; $("#tabbar").style.display = "flex";
   applyFontScale(S.fontScale || 1); // সংরক্ষিত লেখার-আকার ফিরিয়ে আনো
+  migrateSrs(); // SRS চালুর আগের শেখা শব্দগুলোকে সূচিতে ছড়িয়ে দাও (একবার)
   dailyRefresh(); updateTop(); showTab("home");
   introQueue = [];
   if (!S.briefShown) { S.briefShown = true; S.introShown = true; save(); introQueue.push(showBrief); }
@@ -148,4 +150,5 @@ Object.assign(window, {
   startFlash, flipCard, flashKnown, flashAgain, quitFlash, skipEx, renderLeague,
   showLessonIndex, filterLessons,
   showGoalPicker, setGoal, showFontPicker, setFontScale, showGlossary, filterGlossary,
+  showQuranProgress,
 });
