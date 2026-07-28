@@ -71,11 +71,17 @@ export function genExercises(ui) {
   picVocab.slice(2, 4).forEach((w) => ex.push({ t: "pic_ba", w, opts: shuffle([w, ...picDistractors(allVimg, w, 3)]) }));
   picVocab.slice(4, 6).forEach((w) => ex.push({ t: "listen_pic", w, opts: shuffle([w, ...picDistractors(allVimg, w, 3)]) }));
   if (picVocab.length >= 4) ex.push({ t: "pic_match", pairs: picVocab.slice(0, 4) });
-  // দক্ষতা: শোনা+বলা ও লেখা। এক-শব্দের (স্পেসহীন) শব্দ থেকে বাছাই।
+  // চার ভাষা-দক্ষতাই অনুশীলনে রাখতে প্রতি পাঠে একাধিক বলা (say) ও লেখা (trace)।
+  // এক-শব্দের (স্পেসহীন) শব্দ থেকে বাছাই — শোনা+বলা ও হাতে লেখা।
   const single = shuffle(u.vocab.filter((v) => !/\s/.test(v.a) && normAr(v.a).length >= 2));
-  if (speechSupported() && single.length) ex.push({ t: "say", w: single[0] });        // বলো — কণ্ঠ যাচাই
-  const traceW = single.find((v) => normAr(v.a).length <= 6) || single[1] || single[0];
-  if (traceW) ex.push({ t: "trace", w: traceW });                                       // লেখো — ট্রেসিং
+  const sayPicks = single.slice(0, 2);                                                  // বলো — দুটি কণ্ঠ যাচাই
+  if (speechSupported()) sayPicks.forEach((w) => ex.push({ t: "say", w }));
+  // লেখার জন্য ছোট শব্দ (≤৬ হরফ) ভালো; সম্ভব হলে বলা-শব্দের বাইরে থেকে দুটি ভিন্ন শব্দ
+  const sayset = new Set(sayPicks.map((v) => v.a));
+  const short = single.filter((v) => normAr(v.a).length <= 6);
+  const outside = short.filter((v) => !sayset.has(v.a));
+  const tracePicks = (outside.length >= 2 ? outside : short.length ? short : single).slice(0, 2);
+  tracePicks.forEach((w) => ex.push({ t: "trace", w }));                                 // লেখো — দুটি ট্রেসিং
   return orderByDifficulty(ex);
 }
 /* রিভিউ: শেখা শব্দ থেকে মিশ্র অনুশীলন */
