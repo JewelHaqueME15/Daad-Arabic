@@ -252,7 +252,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .login-card p.sub{color:var(--gray);font-weight:600;font-size:14px;margin-bottom:22px;line-height:1.6}
 .field{margin-bottom:14px;text-align:right}
 .field label{display:block;font-size:13px;font-weight:800;color:var(--gray);margin-bottom:5px}
-.field input[type=text],.field input[type=password]{width:100%;padding:13px 15px;border:2px solid var(--line);border-radius:12px;font-size:16.5px;font-family:inherit;font-weight:600;text-align:right;color:var(--ink)}
+.field input[type=text],.field input[type=password],.field input[type=email]{width:100%;padding:13px 15px;border:2px solid var(--line);border-radius:12px;font-size:16.5px;font-family:inherit;font-weight:600;text-align:right;color:var(--ink);background:#fff}
 .field input:focus{outline:none;border-color:var(--blue)}
 .gender-row{display:flex;gap:10px}
 .gender-opt{flex:1;cursor:pointer}
@@ -385,9 +385,17 @@ details.admin-acc summary{cursor:pointer;font-weight:800;font-size:15px;padding:
 #g-btn{display:flex;justify-content:center;min-height:44px}
 .or-div{display:flex;align-items:center;gap:10px;margin:14px 0 4px;color:var(--gray);font-weight:700;font-size:12.5px}
 .or-div::before,.or-div::after{content:"";flex:1;height:2px;background:var(--line);border-radius:2px}
-.seg{display:flex;gap:6px;background:var(--soft);border:2px solid var(--line);border-radius:14px;padding:4px;margin:10px 0 14px}
-.seg button{flex:1;padding:9px 4px;border-radius:10px;font-weight:800;font-size:13.5px;color:var(--gray);background:transparent;transition:all .15s}
-.seg button.on{background:#fff;color:var(--ink);box-shadow:0 2px 0 var(--line)}
+.pw-wrap{position:relative;display:flex;align-items:center}
+/* চোখের বোতামের নিচে লেখা যেন না ঢোকে — .field-এর নিয়মকে হারাতে হয় */
+.field .pw-wrap input[type=text],.field .pw-wrap input[type=password]{padding-right:48px}
+.pw-eye{position:absolute;right:8px;width:34px;height:34px;border-radius:9px;font-size:16px;background:transparent;opacity:.65}
+.pw-eye:active{opacity:1;background:var(--soft)}
+.fld-hint{color:var(--gray);font-weight:600;font-size:12px;margin-top:5px}
+.linkish{background:none;border:none;padding:0;color:var(--blue);font-weight:800;font-size:inherit;text-decoration:underline;cursor:pointer}
+.switch-line{margin-top:16px;color:var(--gray);font-weight:700;font-size:13.5px}
+.legacy-line{margin-top:10px;font-size:12.5px;color:var(--gray);font-weight:600}
+.legacy-line .linkish{font-weight:700;color:var(--gray)}
+#lg-err,#li-err{color:var(--red);font-weight:700;font-size:13.5px;margin-top:10px;display:none;line-height:1.6}
 
 /* ── ধাপে ধাপে শেখার স্ক্রীন ── */
 .vi-dots{display:flex;justify-content:center;gap:6px;margin-top:12px;flex-wrap:wrap}

@@ -39,19 +39,32 @@ async function afterAuth({ username, isAdmin, state }) {
   if (g && !S.gender) { S.gender = g.value; save(); }
   enterApp();
 }
-/* ════════ প্রবেশের উপায় বাছাই (ইমেইল / নাম) ════════ */
-let LOGIN_MODE = "email";
-function setLoginMode(m) {
-  LOGIN_MODE = m;
-  $("#mode-email").style.display = m === "email" ? "" : "none";
-  $("#mode-name").style.display = m === "name" ? "" : "none";
-  $("#seg-email").classList.toggle("on", m === "email");
-  $("#seg-name").classList.toggle("on", m === "name");
-  $("#li-new").style.display = m === "email" ? "" : "none";
-  $("#li-hint").textContent = m === "email"
-    ? "ইমেইল দিয়ে খুললে যেকোনো ফোন থেকে একই অগ্রগতি পাবে"
-    : "নতুন নাম দিলে নতুন প্রোফাইল তৈরি হয়ে যাবে";
+/* ════════ প্রবেশ / নতুন অ্যাকাউন্ট ════════
+   দুটি উপায়ই যথেষ্ট — গুগল, অথবা ইমেইল+পাসওয়ার্ড। (পুরনো নাম-প্রোফাইলের
+   ব্যবহারকারীরা যেন আটকে না যান, তার জন্য নিচে ছোট একটি লিঙ্ক আছে।) */
+let AUTH_MODE = "signin"; // signin | signup
+function setAuthMode(m) {
+  AUTH_MODE = m;
+  const up = m === "signup";
+  $("#fld-name").style.display = up ? "" : "none";
+  $("#admin-row").style.display = up ? "" : "none";
+  $("#pw-hint").style.display = up ? "" : "none";
+  $("#li-go").textContent = up ? "অ্যাকাউন্ট খুলো →" : "প্রবেশ করো →";
+  $("#li-epass").setAttribute("autocomplete", up ? "new-password" : "current-password");
+  $("#li-sub").textContent = up
+    ? "নতুন অ্যাকাউন্ট খুলে শুরু করো — অগ্রগতি সব ডিভাইসে থাকবে।"
+    : "প্রবেশ করে শেখা শুরু করো — তোমার অগ্রগতি নিরাপদে সংরক্ষিত থাকবে।";
+  $("#li-switch").innerHTML = up
+    ? `অ্যাকাউন্ট আছে? <button type="button" class="linkish" onclick="setAuthMode('signin')">প্রবেশ করো</button>`
+    : `অ্যাকাউন্ট নেই? <button type="button" class="linkish" onclick="setAuthMode('signup')">নতুন খুলো</button>`;
   const err = $("#li-err"); if (err) err.style.display = "none";
+}
+/* পাসওয়ার্ড দেখা/লুকানো — ভুল টাইপ ঠেকাতে সাহায্য করে */
+function togglePw() {
+  const i = $("#li-epass"), b = $("#pw-eye");
+  const show = i.type === "password";
+  i.type = show ? "text" : "password";
+  b.textContent = show ? "🙈" : "👁️";
 }
 function loginErr(msg) { const e = $("#li-err"); e.textContent = msg; e.style.display = "block"; }
 /* সার্ভার ধীর হলে (ঘুমন্ত ডাটাবেস) বোতামটি যেন মরা মনে না হয় */
@@ -61,73 +74,85 @@ function busyBtn(btn, on, busyText) {
   else { btn.disabled = false; if (btn.dataset.label) btn.textContent = btn.dataset.label; }
 }
 
-async function doLogin() {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+async function submitAuth() {
   const err = $("#li-err"); err.style.display = "none";
   const btn = $("#li-go");
+  const email = $("#li-email").value.trim();
+  const pass = $("#li-epass").value;
   const fail = (m) => { busyBtn(btn, false); loginErr(m); };
 
-  if (LOGIN_MODE === "email") {
-    const email = $("#li-email").value.trim();
-    const pass = $("#li-epass").value;
-    if (!email) return loginErr("ইমেইল লেখো");
-    if (!pass) return loginErr("পাসওয়ার্ড লেখো");
-    busyBtn(btn, true, "প্রবেশ করা হচ্ছে…");
+  if (!email) return loginErr("ইমেইল লেখো");
+  if (!EMAIL_RE.test(email)) return loginErr("ইমেইলটি ঠিকঠাক লেখা হয়নি");
+  if (!pass) return loginErr("পাসওয়ার্ড লেখো");
+
+  if (AUTH_MODE === "signup") {
+    if (pass.length < 6) return loginErr("পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে");
+    busyBtn(btn, true, "অ্যাকাউন্ট খোলা হচ্ছে…");
     try {
-      const res = await api.login({ email, password: pass });
+      const res = await api.register({
+        email, password: pass,
+        name: $("#li-dispname").value.trim(),
+        wantsAdmin: $("#li-admin-chk").checked, adminCode: $("#li-admin-code").value.trim(),
+      });
       busyBtn(btn, false); await afterAuth(res);
     } catch (e) {
-      fail(e && e.notFound ? "এই ইমেইলে অ্যাকাউন্ট নেই — নিচে “নতুন অ্যাকাউন্ট খুলো” চাপো" : (e.message || "প্রবেশ করা যায়নি"));
+      // ইমেইলটি আগে থেকেই থাকলে প্রবেশের দিকে নিয়ে যাও
+      if (e && e.status === 409) { setAuthMode("signin"); return fail("এই ইমেইলে অ্যাকাউন্ট আছে — পাসওয়ার্ড দিয়ে প্রবেশ করো"); }
+      fail(e.message || "অ্যাকাউন্ট খোলা যায়নি");
     }
     return;
   }
 
-  // ── নাম দিয়ে (পুরনো পদ্ধতি) ──
-  const name = $("#li-name").value.trim();
-  const pass = $("#li-pass").value;
-  if (!name) return loginErr("নাম লেখো");
   busyBtn(btn, true, "প্রবেশ করা হচ্ছে…");
   try {
-    const res = await api.login({ username: name, password: pass });
-    busyBtn(btn, false); await afterAuth(res);
-    return;
-  } catch (e) {
-    // ইন্টারনেট/সার্ভারের সমস্যা বা ভুল পাসওয়ার্ড হলে নতুন অ্যাকাউন্ট বানানো ভুল হবে।
-    // আগে যেকোনো ব্যর্থতাতেই signup চেষ্টা হতো, ফলে ভুল পাসওয়ার্ডেও বার্তা আসত
-    // "এই নামে ইতিমধ্যে একটি প্রোফাইল আছে" — বিভ্রান্তিকর।
-    if (!e || !e.notFound) return fail((e && e.message) || "প্রবেশ করা যায়নি");
-  }
-  // এই নামে সত্যিই কোনো প্রোফাইল নেই → নতুন খোলো (পুরনো localStorage থাকলে এনে)
-  try {
-    const wantAdmin = $("#li-admin-chk").checked, code = $("#li-admin-code").value.trim();
-    const legacyState = readLegacyState(name);
-    const res = legacyState
-      ? await api.migrate({ username: name, password: pass, wantsAdmin: wantAdmin, adminCode: code, localState: legacyState })
-      : await api.signup({ username: name, password: pass, wantsAdmin: wantAdmin, adminCode: code });
-    if (legacyState) forgetLegacyUser(name);
+    const res = await api.login({ email, password: pass });
     busyBtn(btn, false); await afterAuth(res);
   } catch (e) {
-    fail(e.message || "লগইন ব্যর্থ হয়েছে");
+    // অ্যাকাউন্ট না থাকলে সরাসরি "নতুন খোলা"-তে নিয়ে যাও, খালি ভুল দেখিও না
+    if (e && e.notFound) { setAuthMode("signup"); return fail("এই ইমেইলে অ্যাকাউন্ট নেই — নিচের বোতামে নতুন খুলে ফেলো"); }
+    fail(e.message || "প্রবেশ করা যায়নি");
   }
 }
 
-/* ইমেইল + পাসওয়ার্ডে নতুন অ্যাকাউন্ট */
-async function doRegister() {
-  const err = $("#li-err"); err.style.display = "none";
-  if (LOGIN_MODE !== "email") { setLoginMode("email"); return; }
-  const btn = $("#li-new");
-  const email = $("#li-email").value.trim();
-  const pass = $("#li-epass").value;
-  if (!email) return loginErr("ইমেইল লেখো");
-  if ((pass || "").length < 6) return loginErr("পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে");
-  busyBtn(btn, true, "খোলা হচ্ছে…");
+/* ── পুরনো নাম-প্রোফাইল থেকে আসা ব্যবহারকারীদের জন্য উদ্ধারপথ ──
+   নতুন সাইন-আপ ইমেইল দিয়েই হয়; কিন্তু যাঁরা আগে শুধু নাম দিয়ে প্রোফাইল
+   খুলেছিলেন, তাঁদের অগ্রগতি যেন হারিয়ে না যায় তাই এই পথটি রাখা হয়েছে। */
+function showLegacy() {
+  modal(`<div class="emo">👤</div><h2>পুরনো নাম-প্রোফাইল</h2>
+    <p>আগে শুধু নাম দিয়ে প্রোফাইল খুলে থাকলে এখানে সেই নামটি দাও — তোমার আগের সব অগ্রগতি ফিরে পাবে ইনশাআল্লাহ।</p>
+    <div class="field"><label for="lg-name">তোমার নাম</label><input type="text" id="lg-name" placeholder="যেমনঃ রাশেদ" maxlength="24"></div>
+    <div class="field"><label for="lg-pass">পাসওয়ার্ড (থাকলে)</label><input type="password" id="lg-pass" placeholder="না দিলেও চলবে" maxlength="24"></div>
+    <div id="lg-err"></div>`,
+    `<button class="btn" id="lg-go" onclick="legacyLogin()">প্রবেশ করো →</button>
+     <div style="height:10px"></div>
+     <button class="btn ghost" onclick="closeModal()">বাতিল</button>`);
+  setTimeout(() => { const el = $("#lg-name"); if (el) el.focus(); }, 60);
+}
+async function legacyLogin() {
+  const nameEl = $("#lg-name"), passEl = $("#lg-pass"), err = $("#lg-err"), btn = $("#lg-go");
+  const name = (nameEl && nameEl.value.trim()) || "";
+  const pass = (passEl && passEl.value) || "";
+  const show = (m) => { busyBtn(btn, false); if (err) { err.textContent = m; err.style.display = "block"; } };
+  if (!name) return show("নাম লেখো");
+  busyBtn(btn, true, "খুঁজছি…");
   try {
-    const res = await api.register({
-      email, password: pass,
-      wantsAdmin: $("#li-admin-chk").checked, adminCode: $("#li-admin-code").value.trim(),
-    });
-    busyBtn(btn, false); await afterAuth(res);
+    const res = await api.login({ username: name, password: pass });
+    closeModal(); await afterAuth(res);
+    return;
   } catch (e) {
-    busyBtn(btn, false); loginErr(e.message || "অ্যাকাউন্ট খোলা যায়নি");
+    if (!e || !e.notFound) return show((e && e.message) || "প্রবেশ করা যায়নি");
+  }
+  // সার্ভারে নেই, কিন্তু এই ব্রাউজারে পুরনো (localStorage) প্রগ্রেস থাকলে সেটি তুলে আনো
+  const legacyState = readLegacyState(name);
+  if (!legacyState) return show("এই নামে কোনো পুরনো প্রোফাইল পাওয়া যায়নি");
+  try {
+    const res = await api.migrate({ username: name, password: pass, localState: legacyState });
+    forgetLegacyUser(name);
+    closeModal(); await afterAuth(res);
+  } catch (e) {
+    show(e.message || "পুরনো প্রোফাইল আনা যায়নি");
   }
 }
 
@@ -230,13 +255,18 @@ function enterApp() {
     return;
   } catch { /* not signed in yet */ }
   $("#scr-login").classList.add("active");
-  setLoginMode("email");
+  setAuthMode("signin");
   initGoogle();
+  // Enter চাপলেই ফর্ম জমা হোক — ছোট স্ক্রিনে সুবিধা
+  ["#li-email", "#li-epass", "#li-dispname"].forEach((sel) => {
+    const el = $(sel);
+    if (el) el.addEventListener("keydown", (ev) => { if (ev.key === "Enter") submitAuth(); });
+  });
 })();
 
 /* ════════ ইনলাইন onclick="..." HTML অ্যাট্রিবিউট থেকে ডাকা ফাংশনগুলো window-এ এক্সপোজ করা ════════ */
 Object.assign(window, {
-  doLogin, doRegister, setLoginMode, doLogout, toggleSound, quitLesson, showTab, finishStory, resetAll,
+  submitAuth, setAuthMode, togglePw, showLegacy, legacyLogin, doLogout, toggleSound, quitLesson, showTab, finishStory, resetAll,
   closeModal, tapUnit, storyLockedMsg, openVocabIntro, buyHearts, speak,
   vcTapTile, selOpt, tapMatch, tapTile, afterResult, startReview, startLesson, openStory, showRule, startSay, traceClear,
   nextIntro, setGender, showGenderAsk,

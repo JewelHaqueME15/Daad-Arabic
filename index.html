@@ -15,42 +15,41 @@
   <div class="login-card">
     <div class="mascot ar">ض</div>
     <h1>Daad</h1>
-    <p class="sub">প্রবেশ করে শেখা শুরু করো — তোমার অগ্রগতি নিরাপদে সংরক্ষিত থাকবে।</p>
+    <p class="sub" id="li-sub">প্রবেশ করে শেখা শুরু করো — তোমার অগ্রগতি নিরাপদে সংরক্ষিত থাকবে।</p>
 
-    <!-- গুগল দিয়ে (কনফিগার করা থাকলেই দেখা যাবে) -->
+    <!-- ১. গুগল দিয়ে (কনফিগার করা থাকলেই দেখা যাবে) -->
     <div id="g-wrap" style="display:none">
       <div id="g-btn"></div>
       <div class="or-div"><span>অথবা</span></div>
     </div>
 
-    <!-- কোন উপায়ে প্রবেশ -->
-    <div class="seg">
-      <button type="button" id="seg-email" class="on" onclick="setLoginMode('email')">📧 ইমেইল</button>
-      <button type="button" id="seg-name" onclick="setLoginMode('name')">👤 নাম</button>
+    <!-- ২. ইমেইল ও পাসওয়ার্ড -->
+    <div class="field" id="fld-name" style="display:none">
+      <label for="li-dispname">তোমার নাম</label>
+      <input type="text" id="li-dispname" placeholder="যেমনঃ রাশেদ" maxlength="24" autocomplete="name">
     </div>
-
-    <div id="mode-email">
-      <div class="field"><label>ইমেইল</label><input type="email" id="li-email" placeholder="you@example.com" autocomplete="email"></div>
-      <div class="field"><label>পাসওয়ার্ড</label><input type="password" id="li-epass" placeholder="অন্তত ৬ অক্ষর" maxlength="64" autocomplete="current-password"></div>
+    <div class="field">
+      <label for="li-email">ইমেইল</label>
+      <input type="email" id="li-email" placeholder="you@example.com" autocomplete="email" inputmode="email">
     </div>
-
-    <div id="mode-name" style="display:none">
-      <div class="field"><label>তোমার নাম</label><input type="text" id="li-name" placeholder="যেমনঃ রাশেদ" maxlength="24"></div>
-      <div class="field"><label>পাসওয়ার্ড (ঐচ্ছিক)</label><input type="password" id="li-pass" placeholder="না দিলেও চলবে" maxlength="24"></div>
-    </div>
-    <div class="field"><label>তুমি ছেলে না মেয়ে? (উচ্চারণের কণ্ঠস্বর ঠিক করতে)</label>
-      <div class="gender-row">
-        <label class="gender-opt"><input type="radio" name="li-gender" value="male"><span>👦 ছেলে</span></label>
-        <label class="gender-opt"><input type="radio" name="li-gender" value="female"><span>👧 মেয়ে</span></label>
+    <div class="field">
+      <label for="li-epass">পাসওয়ার্ড</label>
+      <div class="pw-wrap">
+        <input type="password" id="li-epass" placeholder="••••••••" maxlength="64" autocomplete="current-password">
+        <button type="button" class="pw-eye" id="pw-eye" onclick="togglePw()" aria-label="পাসওয়ার্ড দেখাও">👁️</button>
       </div>
+      <p class="fld-hint" id="pw-hint" style="display:none">অন্তত ৬ অক্ষরের পাসওয়ার্ড দাও</p>
     </div>
-    <div class="chk-row"><input type="checkbox" id="li-admin-chk" onchange="document.getElementById('li-admin-wrap').style.display=this.checked?'block':'none'"><label for="li-admin-chk">আমি একজন এডমিন / শিক্ষক</label></div>
-    <div id="li-admin-wrap" class="field"><label>এডমিন কোড</label><input type="password" id="li-admin-code" placeholder="এডমিন কোড দাও"></div>
+
+    <div id="admin-row">
+      <div class="chk-row"><input type="checkbox" id="li-admin-chk" onchange="document.getElementById('li-admin-wrap').style.display=this.checked?'block':'none'"><label for="li-admin-chk">আমি একজন এডমিন / শিক্ষক</label></div>
+      <div id="li-admin-wrap" class="field"><label for="li-admin-code">এডমিন কোড</label><input type="password" id="li-admin-code" placeholder="এডমিন কোড দাও"></div>
+    </div>
+
     <div id="li-err"></div>
-    <button class="btn" id="li-go" onclick="doLogin()">প্রবেশ করো →</button>
-    <div style="height:10px"></div>
-    <button class="btn ghost" id="li-new" onclick="doRegister()">নতুন অ্যাকাউন্ট খুলো</button>
-    <p id="li-hint" style="color:var(--gray);font-weight:600;font-size:12.5px;margin-top:14px">ইমেইল দিয়ে খুললে যেকোনো ফোন থেকে একই অগ্রগতি পাবে</p>
+    <button class="btn" id="li-go" onclick="submitAuth()">প্রবেশ করো →</button>
+    <p class="switch-line" id="li-switch"></p>
+    <p class="legacy-line"><button type="button" class="linkish" onclick="showLegacy()">পুরনো নাম-প্রোফাইল থেকে আসছ?</button></p>
     <p class="dev-credit">© <a href="https://www.facebook.com/JewelHaque.me.buet15" target="_blank" rel="noopener noreferrer">Jewel Haque Munshi</a></p>
   </div>
 </div>
