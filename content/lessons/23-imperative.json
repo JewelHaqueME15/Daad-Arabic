@@ -9,7 +9,9 @@
   "<b>গঠন:</b> আমর তৈরি হয় মুদারি থেকে — শুরুর <span class='ar'>تَـ</span> ফেলে দিয়ে দরকার হলে সামনে <span class='ar'>اِ</span> বা <span class='ar'>اُ</span> বসে: <span class='ar'>تَكْتُبُ</span> → <span class='ar'>اُكْتُبْ</span> · <span class='ar'>تَقْرَأُ</span> → <span class='ar'>اِقْرَأْ</span>।<br>",
   "আদেশ: <span class='ar'>اِفْعَلْ</span> করো! যেমন <span class='ar'>اِقْرَأْ</span> পড়ো · <span class='ar'>اُكْتُبْ</span> লেখো।<br>",
   "নিষেধ: <span class='ar'>لا تَفْعَلْ</span> করো না! যেমন <span class='ar'>لا تَكْذِبْ</span> মিথ্যা বলো না।<br>",
-  "👉 আদেশ = সরাসরি কাউকে কিছু করতে বলা; নিষেধে সামনে <span class='ar'>لا تَـ</span> বসে।"
+  "👉 আদেশ = সরাসরি কাউকে কিছু করতে বলা; নিষেধে সামনে <span class='ar'>لا تَـ</span> বসে।",
+  "<b>━━ ছক: আমর কীভাবে বানাই (৩ ধাপ) ━━</b><br>বর্তমান (মুদারি) থেকে শুরু করে তিন ধাপে আদেশ তৈরি হয়:<div class='ctab-wrap'><table class='ctab'><tr><th>মুদারি (বর্তমান)</th><th>যা করি</th><th>আমর (আদেশ)</th></tr><tr><td><span class='ar'>تَكْتُبُ</span></td><td>تَـ ফেলি → সামনে اُ, শেষে সুকূন</td><td class='c-ar'><span class='ar'>اُكْتُبْ</span></td></tr><tr><td><span class='ar'>تَقْرَأُ</span></td><td>تَـ ফেলি → সামনে اِ</td><td class='c-ar'><span class='ar'>اِقْرَأْ</span></td></tr><tr><td><span class='ar'>تَجْلِسُ</span></td><td>تَـ ফেলি → সামনে اِ</td><td class='c-ar'><span class='ar'>اِجْلِسْ</span></td></tr><tr><td><span class='ar'>تَذْهَبُ</span></td><td>تَـ ফেলি → সামনে اِ</td><td class='c-ar'><span class='ar'>اِذْهَبْ</span></td></tr></table></div>👉 <b>সহজ সূত্র:</b> আমরের শেষে সবসময় <b>সুকূন</b> (ـْ) — জোর দিয়ে থেমে যায়, তাই আদেশ মনে হয়।",
+  "<b>━━ নিষেধ ও মিলিয়ে দেখা ━━</b><br>নিষেধ করতে মুদারির আগে <span class='ar'>لا</span> বসাও (আমর নয়):<br>🔹 <span class='ar'>اُكْتُبْ</span> লেখো → <span class='ar'>لا تَكْتُبْ</span> লিখো না।<br>🔹 <span class='ar'>اِجْلِسْ</span> বসো → <span class='ar'>لا تَجْلِسْ</span> বসো না।<br>👉 <b>পার্থক্যটা মনে রাখো:</b> আদেশে <span class='ar'>اِفْعَلْ</span>, নিষেধে <span class='ar'>لا تَفْعَلْ</span> — নিষেধে মুদারির <span class='ar'>تَـ</span> ফিরে আসে।"
  ],
  "vocab": [
   {

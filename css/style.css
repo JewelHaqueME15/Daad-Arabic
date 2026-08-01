@@ -380,6 +380,28 @@ details.admin-acc summary{cursor:pointer;font-weight:800;font-size:15px;padding:
 .vocab-ar .vocab-sp{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;width:28px;height:28px;border-radius:8px;font-size:13px}
 #vocab-check-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;padding:16px 20px 22px;background:#fff;border-top:2px solid var(--line);z-index:40}
 
+/* ── ধাপে ধাপে শেখার স্ক্রীন ── */
+.vi-dots{display:flex;justify-content:center;gap:6px;margin-top:12px;flex-wrap:wrap}
+.vi-dot{width:8px;height:8px;border-radius:50%;background:var(--line);transition:all .25s}
+.vi-dot.done{background:var(--green)}
+.vi-dot.on{background:var(--blue);width:22px;border-radius:5px}
+.vi-nav{display:flex;gap:10px;align-items:stretch}
+#vi-back{flex:0 0 38%}
+#vocab-check-bar .vi-nav .btn{margin:0}
+
+/* ── মহড়া (শাস্তিহীন প্রথম প্রশ্ন) ── */
+.warm-tip{background:rgba(28,176,246,.08);border:2px solid var(--blue);border-radius:14px;padding:11px 14px;margin:0 0 16px;font-size:13.5px;font-weight:700;color:var(--blue-d);line-height:1.7}
+.warm-tip .wt-rule{margin-top:7px;padding-top:7px;border-top:1px dashed rgba(28,176,246,.45);color:var(--ink);font-weight:600;font-size:14px;line-height:2.1}
+.warm-tip .ar{font-size:21px}
+
+/* ── রূপভেদের ছক (সীগাহ টেবিল) ── */
+.ctab-wrap{overflow-x:auto;margin:10px 0 4px}
+.ctab{width:100%;border-collapse:collapse;font-size:14px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 0 0 2px var(--line)}
+.ctab th{background:var(--soft);font-weight:800;font-size:12.5px;color:var(--gray);padding:8px 10px;text-align:left}
+.ctab td{padding:8px 10px;border-top:1px solid var(--line);font-weight:600}
+.ctab td.c-ar{text-align:right;font-size:22px;white-space:nowrap}
+.ctab tr:nth-child(even) td{background:rgba(0,0,0,.015)}
+
 /* ── কুরআন-শব্দ অগ্রগতি মিটার ── */
 .qcov{display:flex;align-items:center;gap:14px;border:2px solid var(--line);border-radius:16px;padding:14px;cursor:pointer}
 .qcov:active{background:var(--soft)}

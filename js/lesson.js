@@ -1,8 +1,8 @@
-import { $, esc, shuffle, pick, pickExtra, tk, tashkeelLevel, normAr, sayMatches } from "./utils.js";
+import { $, esc, bn, shuffle, pick, pickExtra, tk, tashkeelLevel, normAr, sayMatches } from "./utils.js";
 import { speechSupported, listenArabic } from "./speech.js";
 import { S, save, bumpStreak } from "./state.js";
 import { seedWord, scheduleWord, dueWords } from "./srs.js";
-import { UNITS, BADGES, LEVELS } from "./data.js";
+import { UNITS, BADGES, LEVELS, SECTIONS } from "./data.js";
 import { LEARN } from "./lessons.js";
 import { ICONS } from "./icons.js";
 import { modal, closeModal, showTab, updateTop, xpFloat, comboFloat, celebrateConfetti } from "./ui.js";
@@ -25,6 +25,9 @@ const DIFFICULTY = {
 function orderByDifficulty(ex) {
   return shuffle(ex).sort((a, b) => (DIFFICULTY[a.t] || 6) - (DIFFICULTY[b.t] || 6));
 }
+/* ক্রিয়ার অধ্যায় থেকে ব্যাকরণ ভারী — সেখান থেকে পাঠের শুরুতে "মহড়া" প্রশ্ন থাকে
+   (নিয়ম চোখের সামনে, ভুলে হৃদয় কমে না)। অবস্থানটি book.json-এর অধ্যায় থেকেই নেওয়া। */
+const GRAMMAR_FROM = (SECTIONS.find((s) => /ক্রিয়ার জগত/.test(s.t || "")) || { from: 19 }).from;
 
 /* Picture questions must never show the same icon twice — otherwise two options
    look equally correct and the question is unanswerable. Different words often
@@ -82,7 +85,10 @@ export function genExercises(ui) {
   const outside = short.filter((v) => !sayset.has(v.a));
   const tracePicks = (outside.length >= 2 ? outside : short.length ? short : single).slice(0, 2);
   tracePicks.forEach((w) => ex.push({ t: "trace", w }));                                 // লেখো — দুটি ট্রেসিং
-  return orderByDifficulty(ex);
+  const ordered = orderByDifficulty(ex);
+  // ব্যাকরণ-পাঠে প্রথম দুটি সহজ প্রশ্ন "মহড়া" — শেখা থেকে অনুশীলনে মসৃণ সেতু
+  if (ui >= GRAMMAR_FROM) ordered.slice(0, 2).forEach((e) => { e.warm = true; });
+  return ordered;
 }
 /* রিভিউ: শেখা শব্দ থেকে মিশ্র অনুশীলন */
 export function genReviewExercises(ws) {
@@ -121,34 +127,75 @@ export function startLesson(ui) {
   $("#scr-lesson").classList.add("active");
   renderEx();
 }
-/* ════════ শব্দ-পরিচিতি স্ক্রীন (বইয়ের মতো) ════════ */
+/* ════════ শেখার স্ক্রীন — ধাপে ধাপে পাঠ, তারপর নতুন শব্দ ════════
+   আগে পুরো ব্যাখ্যা একসাথে দেখিয়ে সরাসরি অনুশীলনে পাঠানো হতো। ক্রিয়ার অধ্যায় থেকে
+   ব্যাকরণ ভারী হওয়ায় সেটি "না শিখিয়েই পরীক্ষা" মনে হতো। এখন ব্যাখ্যা ছোট ছোট ধাপে
+   ভাগ হয়ে আসে, শেষ ধাপে নতুন শব্দ, তারপরই কেবল অনুশীলন। */
+let VI = null;
+/* LEARN-এর লাইনগুলো (build-content "\n" দিয়ে জোড়া দেয়) যুক্তিসঙ্গত ধাপে ভাগ করো:
+   "━━ শিরোনাম ━━" পেলে নতুন ধাপ শুরু, নইলে ~৪২০ অক্ষর পরপর। */
+export function teachSteps(html) {
+  const items = String(html || "").split("\n").map((s) => s.trim()).filter(Boolean);
+  const steps = [];
+  let cur = [], len = 0;
+  for (const it of items) {
+    if (cur.length && (it.includes("━━") || len + it.length > 420)) { steps.push(cur.join("")); cur = []; len = 0; }
+    cur.push(it); len += it.length;
+  }
+  if (cur.length) steps.push(cur.join(""));
+  return steps;
+}
 export function openVocabIntro(ui) {
-  const u = UNITS[ui], lvl = levelFor(ui);
+  const u = UNITS[ui];
+  const steps = teachSteps(LEARN[u.oldId] || u.tip);
+  VI = { ui, steps: steps.length ? steps : [u.tip || ""], i: 0 };
   ["home", "words", "league", "profile"].forEach((x) => $("#scr-" + x).classList.remove("active"));
   $("#scr-lesson").classList.remove("active"); $("#scr-result").classList.remove("active"); $("#scr-story").classList.remove("active"); $("#scr-visual").classList.remove("active");
   $("#topbar").style.display = "none"; $("#tabbar").style.display = "none";
   $("#vocab-top .ttl").textContent = u.title;
-  $("#vocab-body").innerHTML = `<div class="vocab-head"><h1>${u.title}</h1>
-    <p style="color:var(--gray);font-weight:600;font-size:13px;margin-top:4px">${u.sub}</p></div>
-    <div class="learn-card">
-      <div class="learn-h">নিয়ম ও ব্যাখ্যা <span>আরবিতে চাপলে উচ্চারণ</span></div>
-      <div class="tipbox learn-tip">${LEARN[u.oldId] || u.tip}</div>
-    </div>
-    <div class="vocab-section-h">নতুন শব্দ <span>🔊 চাপলে উচ্চারণ</span></div>
+  $("#scr-vocab").classList.add("active");
+  renderVI();
+}
+/* d = +1 পরের ধাপ, -1 আগেরটা। শেষ পাতার পরে অনুশীলন শুরু। */
+export function viGo(d) {
+  if (!VI) return;
+  const total = VI.steps.length + 1; // শেষ পাতা = নতুন শব্দের তালিকা
+  const n = VI.i + d;
+  if (n < 0) return;
+  if (n >= total) { startLesson(VI.ui); return; }
+  VI.i = n; renderVI();
+}
+function renderVI() {
+  const u = UNITS[VI.ui], lvl = levelFor(VI.ui);
+  const total = VI.steps.length + 1, last = VI.i === total - 1;
+  const dots = Array.from({ length: total }, (_, k) =>
+    `<span class="vi-dot${k === VI.i ? " on" : k < VI.i ? " done" : ""}"></span>`).join("");
+  const body = last
+    ? `<div class="vocab-section-h">নতুন শব্দ <span>🔊 চাপলে উচ্চারণ</span></div>
     <div class="vocab-table">
       <div class="vocab-row vocab-hrow"><div class="vocab-bn">অর্থ</div><div class="vocab-pic">ছবি</div><div class="vocab-ar">শব্দ</div></div>
       ${u.vocab.map((v) => `<div class="vocab-row">
       <div class="vocab-bn">${v.b}</div>
       <div class="vocab-pic">${v.img || ICONS[v.a] || ""}</div>
       <div class="vocab-ar"><button class="vocab-sp" onclick="speak('${v.a.replace(/'/g, "\\'")}')">🔊</button><span>${tk(v.a, lvl)}</span></div>
-    </div>`).join("")}</div>`;
-  // ব্যাখ্যার আরবি উদাহরণে চাপলে উচ্চারণ শোনা যায় — নতুন শিক্ষার্থীর জন্য সহায়ক
+    </div>`).join("")}</div>`
+    : `<div class="learn-card">
+      <div class="learn-h">শেখো — ধাপ ${bn(VI.i + 1)}/${bn(VI.steps.length)} <span>আরবিতে চাপলে উচ্চারণ</span></div>
+      <div class="tipbox learn-tip">${VI.steps[VI.i]}</div>
+    </div>`;
+  $("#vocab-body").innerHTML = `<div class="vocab-head"><h1>${u.title}</h1>
+    <p style="color:var(--gray);font-weight:600;font-size:13px;margin-top:4px">${u.sub}</p>
+    <div class="vi-dots">${dots}</div></div>${body}`;
+  // ব্যাখ্যা ও ছকের আরবিতে চাপলে উচ্চারণ শোনা যায় — নতুন শিক্ষার্থীর জন্য সহায়ক
   $("#vocab-body").querySelectorAll(".learn-tip .ar").forEach((el) => {
     el.classList.add("tap-ar");
     el.onclick = () => speak(el.textContent.trim());
   });
-  $("#vocab-start-btn").onclick = () => startLesson(ui);
-  $("#scr-vocab").classList.add("active");
+  const btn = $("#vocab-start-btn");
+  btn.textContent = last ? "অনুশীলন শুরু করো →" : "পরের ধাপ →";
+  btn.onclick = () => viGo(1);
+  const back = $("#vi-back");
+  if (back) { back.style.visibility = VI.i > 0 ? "visible" : "hidden"; back.onclick = () => viGo(-1); }
   window.scrollTo(0, 0);
 }
 
@@ -268,7 +315,17 @@ export function renderEx() {
     <div id="build-bank" style="direction:ltr">${words.map((w, i) => `<button class="tile" data-i="${i}" data-w="${esc(w)}" onclick="tapTile(this)">${esc(w)}</button>`).join("")}</div>`;
     setTimeout(() => speak(e.s.a), 300);
   }
+  /* মহড়া প্রশ্নে নিয়মটি চোখের সামনেই থাকে এবং ভুলে শাস্তি নেই — শেখা থেকে
+     অনুশীলনে যাওয়ার সেতু, যাতে "না শিখিয়ে পরীক্ষা" মনে না হয়। */
+  if (e.warm && L.ui != null && L.ui >= 0) {
+    const u = UNITS[L.ui];
+    A.insertAdjacentHTML("afterbegin",
+      `<div class="warm-tip"><b>💡 মহড়া</b> — নিয়মটি সামনেই আছে, ভুল হলে হৃদয় কমবে না।<div class="wt-rule">${u.tip || ""}</div></div>`);
+    A.querySelectorAll(".warm-tip .ar").forEach((el) => { el.classList.add("tap-ar"); el.onclick = () => speak(el.textContent.trim()); });
+  }
 }
+/* মহড়া প্রশ্নে ভুল হলে হৃদয় কমে না (শেখার সময় শাস্তি নয়) */
+function penalize() { const e = L && L.ex && L.ex[L.i]; if (e && e.warm) return; loseHeart(); }
 /* ── কম্বো (টানা সঠিক উত্তর) ── */
 function bumpCombo(good) {
   if (good) {
@@ -301,7 +358,7 @@ export function tapMatch(el) {
   } else {
     bumpCombo(false);
     sndBad(); [a, b].forEach((x) => { x.classList.add("bad"); setTimeout(() => x.classList.remove("bad", "sel"), 600); });
-    loseHeart(); // মিলে গেলে পুনরায় চেষ্টা করতে দাও; মাঝপথে আটকানো নেই
+    penalize(); // মিলে গেলে পুনরায় চেষ্টা করতে দাও; মাঝপথে আটকানো নেই
   }
   L.matchSel = null;
 }
@@ -439,7 +496,7 @@ export function skipEx() {
   if (!L || L.answered) return;
   const e = L.ex[L.i];
   L.answered = true;
-  L.wrong++; bumpCombo(false); loseHeart();
+  L.wrong++; bumpCombo(false); penalize();
   const correctTxt = correctTextFor(e);
   feedback(false, "সঠিক উত্তর: " + correctTxt);
   if (/[؀-ۿ]/.test(correctTxt)) speak(correctTxt);
@@ -473,7 +530,7 @@ export function checkAnswer() {
     $("#btn-check").textContent = "চালিয়ে যাও"; $("#btn-check").onclick = () => next(true);
   } else {
     bumpCombo(false);
-    L.wrong++; loseHeart();
+    L.wrong++; penalize();
     // শুরু করা পাঠটি সবসময় শেষ করতে দাও — মাঝপথে হৃদয় শেষ হলেও আটকাবে না (নতুন
     // শিক্ষার্থীর জন্য কোমল)। নতুন পাঠ শুরুর সময় হৃদয়ের শর্ত ঠিকই থাকে।
     feedback(false, "সঠিক উত্তর: " + correctTxt);
