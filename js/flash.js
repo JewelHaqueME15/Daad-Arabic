@@ -7,7 +7,7 @@ import { S, save } from "./state.js";
 import { BADGES } from "./data.js";
 import { wordIcon, starsHTML } from "./icons.js";
 import { modal, closeModal, showTab, updateTop, comboFloat, celebrateConfetti } from "./ui.js";
-import { speak, sndOk, sndPair } from "./tts.js";
+import { speak, sndOk, sndPair, stopSpeech } from "./tts.js";
 
 export let F = null;
 
@@ -104,11 +104,11 @@ function nextCard() {
 }
 
 export function quitFlash() {
-  if (confirm("ফ্ল্যাশকার্ড বন্ধ করবে?")) { speechSynthesis.cancel(); F = null; showTab("words"); }
+  if (confirm("ফ্ল্যাশকার্ড বন্ধ করবে?")) { stopSpeech(); F = null; showTab("words"); }
 }
 
 function finishFlash() {
-  speechSynthesis.cancel();
+  stopSpeech();
   const perfect = F.again === 0;
   const xp = F.total * 3 + (perfect ? 15 : 0);
   const gems = 2 + Math.floor(Math.random() * 4);

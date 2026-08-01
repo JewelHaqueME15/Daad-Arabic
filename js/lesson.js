@@ -6,7 +6,7 @@ import { UNITS, BADGES, LEVELS } from "./data.js";
 import { LEARN } from "./lessons.js";
 import { ICONS } from "./icons.js";
 import { modal, closeModal, showTab, updateTop, xpFloat, comboFloat, celebrateConfetti } from "./ui.js";
-import { speak, sndOk, sndBad, sndPair } from "./tts.js";
+import { speak, sndOk, sndBad, sndPair, stopSpeech } from "./tts.js";
 import { maybeVisualChallenge } from "./visual.js";
 
 export let L = null; // চলমান পাঠ
@@ -153,7 +153,7 @@ export function openVocabIntro(ui) {
 }
 
 export function quitLesson() {
-  if (confirm("পাঠ ছেড়ে দিলে এই অগ্রগতি হারাবে। ছাড়বে?")) { speechSynthesis.cancel(); showTab("home"); }
+  if (confirm("পাঠ ছেড়ে দিলে এই অগ্রগতি হারাবে। ছাড়বে?")) { stopSpeech(); showTab("home"); }
 }
 /* পাঠ চলাকালীন নিয়ম-ব্যাখ্যা আবার দেখা — নতুন শিক্ষার্থী ভুলে গেলে যেন ফিরে দেখতে পারে */
 export function showRule() {
@@ -497,7 +497,7 @@ export function next(wasOk) {
 }
 /* ── সমাপ্তি ── */
 export function finishLesson() {
-  speechSynthesis.cancel();
+  stopSpeech();
   const perfect = L.wrong === 0;
   const accuracy = (L.ex.length - L.wrong) / L.ex.length;
   const passedHalf = accuracy >= 0.5;

@@ -85,7 +85,12 @@ function nextIntro() {
   const f = introQueue.shift();
   if (f) f(); else closeModal();
 }
-function setGender(g) { S.gender = g; save(); nextIntro(); }
+function setGender(g) {
+  S.gender = g; save();
+  nextIntro();
+  // বাছাই করা কণ্ঠটি সঙ্গে সঙ্গে শুনিয়ে দাও — তাতে বোঝা যায় সেটিংটি কাজ করেছে
+  setTimeout(() => speak("بِسْمِ اللّٰهِ"), 250);
+}
 function showGenderAsk() {
   modal(`<div class="emo">🗣️</div><h2>কণ্ঠস্বর বেছে নাও</h2>
   <p>তুমি ছেলে না মেয়ে? সেই অনুযায়ী আরবি উচ্চারণের কণ্ঠস্বর বাছাই করা হবে — ছেলেদের জন্য পুরুষকণ্ঠ, মেয়েদের জন্য নারীকণ্ঠ।<br><br>পরে প্রোফাইল থেকে যেকোনো সময় বদলাতে পারবে।</p>`,
