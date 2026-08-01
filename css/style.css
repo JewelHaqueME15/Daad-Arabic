@@ -380,6 +380,15 @@ details.admin-acc summary{cursor:pointer;font-weight:800;font-size:15px;padding:
 .vocab-ar .vocab-sp{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;width:28px;height:28px;border-radius:8px;font-size:13px}
 #vocab-check-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;padding:16px 20px 22px;background:#fff;border-top:2px solid var(--line);z-index:40}
 
+/* ── লগইন: গুগল / ইমেইল / নাম ── */
+#g-wrap{margin:4px 0 2px}
+#g-btn{display:flex;justify-content:center;min-height:44px}
+.or-div{display:flex;align-items:center;gap:10px;margin:14px 0 4px;color:var(--gray);font-weight:700;font-size:12.5px}
+.or-div::before,.or-div::after{content:"";flex:1;height:2px;background:var(--line);border-radius:2px}
+.seg{display:flex;gap:6px;background:var(--soft);border:2px solid var(--line);border-radius:14px;padding:4px;margin:10px 0 14px}
+.seg button{flex:1;padding:9px 4px;border-radius:10px;font-weight:800;font-size:13.5px;color:var(--gray);background:transparent;transition:all .15s}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 2px 0 var(--line)}
+
 /* ── ধাপে ধাপে শেখার স্ক্রীন ── */
 .vi-dots{display:flex;justify-content:center;gap:6px;margin-top:12px;flex-wrap:wrap}
 .vi-dot{width:8px;height:8px;border-radius:50%;background:var(--line);transition:all .25s}

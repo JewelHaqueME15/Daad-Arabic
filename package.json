@@ -13,7 +13,8 @@
     "fix:ocr": "node scripts/fix-ocr.mjs",
     "build:corpus": "node scripts/build-corpus.mjs",
     "search": "node scripts/search-book.mjs",
-    "test": "node scripts/check-icons.mjs && node scripts/build-content.mjs --check"
+    "test:auth": "node tests/auth.test.mjs && node tests/google.test.mjs",
+    "test": "node scripts/check-icons.mjs && node scripts/build-content.mjs --check && npm run test:auth"
   },
   "dependencies": {
     "@vercel/postgres": "^0.10.0",

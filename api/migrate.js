@@ -25,9 +25,12 @@ export default async function handler(req, res) {
 
   const passwordHash = await hashPassword(password || "");
   const user = await createUser(name, passwordHash, isAdmin);
-  await upsertProgress(user.id, (localState && typeof localState === "object") ? localState : {});
+  const seeded = (localState && typeof localState === "object") ? localState : {};
+  await upsertProgress(user.id, seeded);
 
   const token = await signSession({ id: user.id, username: user.username, isAdmin: user.is_admin });
   setSessionCookie(res, token);
-  return res.status(200).json({ username: user.username, isAdmin: user.is_admin });
+  // সদ্য আনা প্রগ্রেসটাই ফেরত দাও — নইলে ক্লায়েন্ট ফাঁকা সেশন বানিয়ে
+  // পরের অটো-সেভে এইমাত্র আনা অগ্রগতি মুছে দিত
+  return res.status(200).json({ username: user.username, isAdmin: user.is_admin, state: seeded });
 }

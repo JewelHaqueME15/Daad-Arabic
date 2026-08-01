@@ -39,41 +39,127 @@ async function afterAuth({ username, isAdmin, state }) {
   if (g && !S.gender) { S.gender = g.value; save(); }
   enterApp();
 }
+/* ════════ প্রবেশের উপায় বাছাই (ইমেইল / নাম) ════════ */
+let LOGIN_MODE = "email";
+function setLoginMode(m) {
+  LOGIN_MODE = m;
+  $("#mode-email").style.display = m === "email" ? "" : "none";
+  $("#mode-name").style.display = m === "name" ? "" : "none";
+  $("#seg-email").classList.toggle("on", m === "email");
+  $("#seg-name").classList.toggle("on", m === "name");
+  $("#li-new").style.display = m === "email" ? "" : "none";
+  $("#li-hint").textContent = m === "email"
+    ? "ইমেইল দিয়ে খুললে যেকোনো ফোন থেকে একই অগ্রগতি পাবে"
+    : "নতুন নাম দিলে নতুন প্রোফাইল তৈরি হয়ে যাবে";
+  const err = $("#li-err"); if (err) err.style.display = "none";
+}
+function loginErr(msg) { const e = $("#li-err"); e.textContent = msg; e.style.display = "block"; }
+/* সার্ভার ধীর হলে (ঘুমন্ত ডাটাবেস) বোতামটি যেন মরা মনে না হয় */
+function busyBtn(btn, on, busyText) {
+  if (!btn) return;
+  if (on) { btn.dataset.label = btn.dataset.label || btn.textContent; btn.disabled = true; btn.textContent = busyText; }
+  else { btn.disabled = false; if (btn.dataset.label) btn.textContent = btn.dataset.label; }
+}
+
 async function doLogin() {
-  const name = $("#li-name").value.trim();
-  const pass = $("#li-pass").value;
-  const wantAdmin = $("#li-admin-chk").checked;
-  const code = $("#li-admin-code").value.trim();
   const err = $("#li-err"); err.style.display = "none";
-  if (!name) { err.textContent = "নাম লেখো"; err.style.display = "block"; return; }
+  const btn = $("#li-go");
+  const fail = (m) => { busyBtn(btn, false); loginErr(m); };
 
-  // সার্ভার ধীর হলে (ঘুমন্ত ডাটাবেস) বোতামটি যেন মরা মনে না হয়
-  const btn = document.querySelector("#scr-login .btn");
-  const label = btn ? btn.textContent : "";
-  if (btn) { btn.disabled = true; btn.textContent = "প্রবেশ করা হচ্ছে…"; }
-  const done = () => { if (btn) { btn.disabled = false; btn.textContent = label; } };
-
-  try {
-    const res = await api.login({ username: name, password: pass });
-    done(); await afterAuth(res);
+  if (LOGIN_MODE === "email") {
+    const email = $("#li-email").value.trim();
+    const pass = $("#li-epass").value;
+    if (!email) return loginErr("ইমেইল লেখো");
+    if (!pass) return loginErr("পাসওয়ার্ড লেখো");
+    busyBtn(btn, true, "প্রবেশ করা হচ্ছে…");
+    try {
+      const res = await api.login({ email, password: pass });
+      busyBtn(btn, false); await afterAuth(res);
+    } catch (e) {
+      fail(e && e.notFound ? "এই ইমেইলে অ্যাকাউন্ট নেই — নিচে “নতুন অ্যাকাউন্ট খুলো” চাপো" : (e.message || "প্রবেশ করা যায়নি"));
+    }
     return;
-  } catch (e) {
-    // ইন্টারনেট/সার্ভারের সমস্যা হলে নতুন অ্যাকাউন্ট বানানোর চেষ্টা করা অর্থহীন
-    if (e && e.offline) { done(); err.textContent = e.message; err.style.display = "block"; return; }
   }
 
+  // ── নাম দিয়ে (পুরনো পদ্ধতি) ──
+  const name = $("#li-name").value.trim();
+  const pass = $("#li-pass").value;
+  if (!name) return loginErr("নাম লেখো");
+  busyBtn(btn, true, "প্রবেশ করা হচ্ছে…");
   try {
+    const res = await api.login({ username: name, password: pass });
+    busyBtn(btn, false); await afterAuth(res);
+    return;
+  } catch (e) {
+    // ইন্টারনেট/সার্ভারের সমস্যা বা ভুল পাসওয়ার্ড হলে নতুন অ্যাকাউন্ট বানানো ভুল হবে।
+    // আগে যেকোনো ব্যর্থতাতেই signup চেষ্টা হতো, ফলে ভুল পাসওয়ার্ডেও বার্তা আসত
+    // "এই নামে ইতিমধ্যে একটি প্রোফাইল আছে" — বিভ্রান্তিকর।
+    if (!e || !e.notFound) return fail((e && e.message) || "প্রবেশ করা যায়নি");
+  }
+  // এই নামে সত্যিই কোনো প্রোফাইল নেই → নতুন খোলো (পুরনো localStorage থাকলে এনে)
+  try {
+    const wantAdmin = $("#li-admin-chk").checked, code = $("#li-admin-code").value.trim();
     const legacyState = readLegacyState(name);
     const res = legacyState
       ? await api.migrate({ username: name, password: pass, wantsAdmin: wantAdmin, adminCode: code, localState: legacyState })
       : await api.signup({ username: name, password: pass, wantsAdmin: wantAdmin, adminCode: code });
     if (legacyState) forgetLegacyUser(name);
-    done(); await afterAuth(res);
+    busyBtn(btn, false); await afterAuth(res);
   } catch (e) {
-    done();
-    err.textContent = e.message || "লগইন ব্যর্থ হয়েছে";
-    err.style.display = "block";
+    fail(e.message || "লগইন ব্যর্থ হয়েছে");
   }
+}
+
+/* ইমেইল + পাসওয়ার্ডে নতুন অ্যাকাউন্ট */
+async function doRegister() {
+  const err = $("#li-err"); err.style.display = "none";
+  if (LOGIN_MODE !== "email") { setLoginMode("email"); return; }
+  const btn = $("#li-new");
+  const email = $("#li-email").value.trim();
+  const pass = $("#li-epass").value;
+  if (!email) return loginErr("ইমেইল লেখো");
+  if ((pass || "").length < 6) return loginErr("পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে");
+  busyBtn(btn, true, "খোলা হচ্ছে…");
+  try {
+    const res = await api.register({
+      email, password: pass,
+      wantsAdmin: $("#li-admin-chk").checked, adminCode: $("#li-admin-code").value.trim(),
+    });
+    busyBtn(btn, false); await afterAuth(res);
+  } catch (e) {
+    busyBtn(btn, false); loginErr(e.message || "অ্যাকাউন্ট খোলা যায়নি");
+  }
+}
+
+/* ════════ গুগল সাইন-ইন ════════ */
+async function onGoogleCredential(resp) {
+  const err = $("#li-err"); err.style.display = "none";
+  try {
+    const res = await api.googleLogin(resp && resp.credential);
+    await afterAuth(res);
+  } catch (e) {
+    loginErr(e.message || "গুগল দিয়ে প্রবেশ করা যায়নি");
+  }
+}
+async function initGoogle() {
+  let cfg = null;
+  try { cfg = await api.config(); } catch { return; }          // সার্ভার না থাকলে চুপচাপ বাদ
+  if (!cfg || !cfg.googleClientId) return;                      // কনফিগার না হলে বোতাম দেখিও না
+  try {
+    await new Promise((res, rej) => {
+      if (window.google && window.google.accounts) return res();
+      const s = document.createElement("script");
+      s.src = "https://accounts.google.com/gsi/client";
+      s.async = true; s.defer = true; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  } catch { return; }
+  if (!(window.google && window.google.accounts && window.google.accounts.id)) return;
+  window.google.accounts.id.initialize({ client_id: cfg.googleClientId, callback: onGoogleCredential });
+  window.google.accounts.id.renderButton($("#g-btn"), {
+    theme: "outline", size: "large", shape: "pill", text: "continue_with", width: 280,
+  });
+  $("#g-wrap").style.display = "";
 }
 async function doLogout() {
   try { await api.logout(); } catch { /* clear client state regardless */ }
@@ -144,11 +230,13 @@ function enterApp() {
     return;
   } catch { /* not signed in yet */ }
   $("#scr-login").classList.add("active");
+  setLoginMode("email");
+  initGoogle();
 })();
 
 /* ════════ ইনলাইন onclick="..." HTML অ্যাট্রিবিউট থেকে ডাকা ফাংশনগুলো window-এ এক্সপোজ করা ════════ */
 Object.assign(window, {
-  doLogin, doLogout, toggleSound, quitLesson, showTab, finishStory, resetAll,
+  doLogin, doRegister, setLoginMode, doLogout, toggleSound, quitLesson, showTab, finishStory, resetAll,
   closeModal, tapUnit, storyLockedMsg, openVocabIntro, buyHearts, speak,
   vcTapTile, selOpt, tapMatch, tapTile, afterResult, startReview, startLesson, openStory, showRule, startSay, traceClear,
   nextIntro, setGender, showGenderAsk,

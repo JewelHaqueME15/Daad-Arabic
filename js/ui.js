@@ -340,7 +340,7 @@ export function showQuranProgress() {
 export function resetAll() {
   if (confirm("সত্যিই সব প্রগ্রেস মুছে ফেলবে?")) {
     Object.assign(S, DEF, { introShown: true });
-    flushSave();
+    flushSave({ reset: true }); // ইচ্ছাকৃত রিসেট — সার্ভারের রক্ষাকবচ পেরোতে দাও
     location.reload();
   }
 }

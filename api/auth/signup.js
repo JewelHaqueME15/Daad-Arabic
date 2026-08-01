@@ -25,5 +25,6 @@ export default async function handler(req, res) {
 
   const token = await signSession({ id: user.id, username: user.username, isAdmin: user.is_admin });
   setSessionCookie(res, token);
-  return res.status(200).json({ username: user.username, isAdmin: user.is_admin });
+  // state ফেরত দেওয়া জরুরি — ক্লায়েন্ট এখান থেকেই সেশন সাজায়
+  return res.status(200).json({ username: user.username, isAdmin: user.is_admin, state: {} });
 }

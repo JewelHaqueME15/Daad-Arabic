@@ -77,10 +77,12 @@ export function save() {
   saveTimer = setTimeout(() => { saveState(S).catch(() => { /* will retry on next save() */ }); }, 400);
 }
 
-export function flushSave() {
+/* opts.reset — ব্যবহারকারী নিজে সব মুছতে চাইলে; সার্ভারের ফাঁকা-state রক্ষাকবচ
+   তখনই কেবল শিথিল হয়। */
+export function flushSave(opts) {
   clearTimeout(saveTimer);
   if (!CUR) return;
-  saveState(S).catch(() => {});
+  saveState(S, opts).catch(() => {});
 }
 
 window.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushSave(); });
