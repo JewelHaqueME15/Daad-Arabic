@@ -9,23 +9,6 @@ import { vcTapTile } from "./visual.js";
 import { startFlash, flipCard, flashKnown, flashAgain, quitFlash } from "./flash.js";
 import { speak, toggleSound } from "./tts.js";
 
-/* ════════ পুরনো (localStorage) প্রোফাইল থেকে নতুন অ্যাকাউন্টে একবার প্রগ্রেস আনার ব্রিজ ════════ */
-const LEGACY_USERS_KEY = "eas_users";
-function readLegacyState(name) {
-  try {
-    const users = JSON.parse(localStorage.getItem(LEGACY_USERS_KEY)) || {};
-    return users[name]?.state || null;
-  } catch { return null; }
-}
-function forgetLegacyUser(name) {
-  try {
-    const users = JSON.parse(localStorage.getItem(LEGACY_USERS_KEY)) || {};
-    delete users[name];
-    if (Object.keys(users).length) localStorage.setItem(LEGACY_USERS_KEY, JSON.stringify(users));
-    else localStorage.removeItem(LEGACY_USERS_KEY);
-  } catch { /* ignore */ }
-}
-
 /* ════════ লগইন / প্রোফাইল ════════ */
 async function afterAuth({ username, isAdmin, state }) {
   // পাঠের ক্রম বদলেছে — DEF মেশানোর আগেই পুরনো state-টিকে নতুন ক্রমে সরিয়ে নাও
@@ -116,45 +99,6 @@ async function submitAuth() {
   }
 }
 
-/* ── পুরনো নাম-প্রোফাইল থেকে আসা ব্যবহারকারীদের জন্য উদ্ধারপথ ──
-   নতুন সাইন-আপ ইমেইল দিয়েই হয়; কিন্তু যাঁরা আগে শুধু নাম দিয়ে প্রোফাইল
-   খুলেছিলেন, তাঁদের অগ্রগতি যেন হারিয়ে না যায় তাই এই পথটি রাখা হয়েছে। */
-function showLegacy() {
-  modal(`<div class="emo">👤</div><h2>পুরনো নাম-প্রোফাইল</h2>
-    <p>আগে শুধু নাম দিয়ে প্রোফাইল খুলে থাকলে এখানে সেই নামটি দাও — তোমার আগের সব অগ্রগতি ফিরে পাবে ইনশাআল্লাহ।</p>
-    <div class="field"><label for="lg-name">তোমার নাম</label><input type="text" id="lg-name" placeholder="যেমনঃ রাশেদ" maxlength="24"></div>
-    <div class="field"><label for="lg-pass">পাসওয়ার্ড (থাকলে)</label><input type="password" id="lg-pass" placeholder="না দিলেও চলবে" maxlength="24"></div>
-    <div id="lg-err"></div>`,
-    `<button class="btn" id="lg-go" onclick="legacyLogin()">প্রবেশ করো →</button>
-     <div style="height:10px"></div>
-     <button class="btn ghost" onclick="closeModal()">বাতিল</button>`);
-  setTimeout(() => { const el = $("#lg-name"); if (el) el.focus(); }, 60);
-}
-async function legacyLogin() {
-  const nameEl = $("#lg-name"), passEl = $("#lg-pass"), err = $("#lg-err"), btn = $("#lg-go");
-  const name = (nameEl && nameEl.value.trim()) || "";
-  const pass = (passEl && passEl.value) || "";
-  const show = (m) => { busyBtn(btn, false); if (err) { err.textContent = m; err.style.display = "block"; } };
-  if (!name) return show("নাম লেখো");
-  busyBtn(btn, true, "খুঁজছি…");
-  try {
-    const res = await api.login({ username: name, password: pass });
-    closeModal(); await afterAuth(res);
-    return;
-  } catch (e) {
-    if (!e || !e.notFound) return show((e && e.message) || "প্রবেশ করা যায়নি");
-  }
-  // সার্ভারে নেই, কিন্তু এই ব্রাউজারে পুরনো (localStorage) প্রগ্রেস থাকলে সেটি তুলে আনো
-  const legacyState = readLegacyState(name);
-  if (!legacyState) return show("এই নামে কোনো পুরনো প্রোফাইল পাওয়া যায়নি");
-  try {
-    const res = await api.migrate({ username: name, password: pass, localState: legacyState });
-    forgetLegacyUser(name);
-    closeModal(); await afterAuth(res);
-  } catch (e) {
-    show(e.message || "পুরনো প্রোফাইল আনা যায়নি");
-  }
-}
 
 /* ════════ গুগল সাইন-ইন ════════ */
 async function onGoogleCredential(resp) {
@@ -266,7 +210,7 @@ function enterApp() {
 
 /* ════════ ইনলাইন onclick="..." HTML অ্যাট্রিবিউট থেকে ডাকা ফাংশনগুলো window-এ এক্সপোজ করা ════════ */
 Object.assign(window, {
-  submitAuth, setAuthMode, togglePw, showLegacy, legacyLogin, doLogout, toggleSound, quitLesson, showTab, finishStory, resetAll,
+  submitAuth, setAuthMode, togglePw, doLogout, toggleSound, quitLesson, showTab, finishStory, resetAll,
   closeModal, tapUnit, storyLockedMsg, openVocabIntro, buyHearts, speak,
   vcTapTile, selOpt, tapMatch, tapTile, afterResult, startReview, startLesson, openStory, showRule, startSay, traceClear,
   nextIntro, setGender, showGenderAsk,
